@@ -41,3 +41,11 @@ pub trait AdditiveHomomorphicScheme<CT, PT, SK>: SKEncryption<CT, PT, SK> {
     /// plaintext, while being unlinkable to the input ciphertext.
     fn rerandomize(&self, ct: &mut CT, pk: &CT);
 }
+
+pub trait Serializable{
+
+    fn to_bytes(&self) -> Vec<u8>;
+
+    /// If the input `bytes` slice does not have a length of 32.
+    fn from_bytes(bytes: &Vec<u8>) -> Self;
+}

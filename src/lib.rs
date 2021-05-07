@@ -94,6 +94,7 @@
 pub(crate) mod integer_arith;
 mod rqpoly;
 pub mod traits;
+mod serialize;
 mod utils;
 
 use integer_arith::scalar::Scalar;
