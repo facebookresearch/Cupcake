@@ -1,16 +1,13 @@
 // use serde::{Serialize, Deserialize};
+use crate::integer_arith::scalar::Scalar;
+use crate::integer_arith::ArithUtils;
+use crate::rqpoly::RqPoly;
+use crate::FVCiphertext;
 use crate::Serializable;
 use std::convert::From;
-use crate::integer_arith::scalar::Scalar;
-use crate::rqpoly::RqPoly;
 use std::convert::TryInto;
 
-pub struct RqPolyWireModel<T> {
-  pub coeffs: Vec<T>,
-  pub is_ntt_form: bool,
-}
-
-pub struct ScalarWireModel{
+pub struct ScalarWireModel {
   pub rep: u64,
 }
 
@@ -20,8 +17,7 @@ impl From<Scalar> for ScalarWireModel {
   }
 }
 
-
-impl Serializable for Scalar{
+impl Serializable for Scalar {
   fn to_bytes(&self) -> std::vec::Vec<u8> {
     let bytes = self.rep().to_be_bytes();
     let mut vec: Vec<u8> = vec![0; 8];
@@ -34,19 +30,40 @@ impl Serializable for Scalar{
   }
 }
 
-impl<T> Serializable for RqPoly<T> where T: Serializable{
+impl<T> Serializable for RqPoly<T>
+where
+  T: Serializable,
+{
   fn to_bytes(&self) -> std::vec::Vec<u8> {
-    let mut vec: Vec<u8> = vec![0,0];
+    let mut vec: Vec<u8> = Vec::new();
     // push in the is ntt form.
     vec.push(self.is_ntt_form as u8);
-    for i in 0..self.coeffs.len(){
+    for i in 0..self.coeffs.len() {
       let mut bytes = self.coeffs[i].to_bytes();
-      // append
-      vec.append(& mut bytes);
+      vec.append(&mut bytes);
     }
     vec
   }
   fn from_bytes(bytes: &std::vec::Vec<u8>) -> Self {
+    let mut coeffs = Vec::new();
+    let is_ntt_form  = bytes[0] != 0;
+    let mut  i : usize = 1;
+    while i + 8 <= bytes.len() {
+      coeffs.push(T::from_bytes(&bytes[i..i+8].to_vec()));
+      i += 8;
+    }
+    RqPoly::new(coeffs, is_ntt_form)
+  }
+}
+
+impl<T> Serializable for FVCiphertext<T>
+where
+  T: Serializable,
+{
+  fn to_bytes(&self) -> std::vec::Vec<u8> {
+    todo!()
+  }
+  fn from_bytes(_: &std::vec::Vec<u8>) -> Self {
     todo!()
   }
 }
@@ -62,23 +79,15 @@ mod tests {
     assert_eq!(c, deserialized_c);
   }
 
-  // fn test_rqpoly_serialization(){
-  //   let context = RqPolyContext::new(4, &Scalar::new_modulus(12289));
-  //   let arc = Arc::new(context);
-  //   let a = from_vec(&vec![1, 0, 0, 0], arc.clone());
-  //   // initialize RqPolys
-  //   // serialize
-  //   // check get back the same poly
-  // }
+  #[test]
+  fn test_rqpoly_serialization() {
+    let mut coeffs = Vec::<Scalar>::new();
+    for i in 0..4 {
+      coeffs.push(Scalar::from_u64_raw(i));
+    }
+    let testpoly = RqPoly::<Scalar>::new(coeffs, false);
+    let bytes = testpoly.to_bytes();
+    let deserialized = RqPoly::<Scalar>::from_bytes(&bytes);
+    assert_eq!(testpoly, deserialized);
+  }
 }
-
-
-
-// impl<T> Serializable for RqPolyWireModel<T> where T: Serialize{
-
-// }
-
-
-// impl Serializable for ScalarWireModel{
-
-// }
