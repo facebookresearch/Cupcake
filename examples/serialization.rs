@@ -13,17 +13,17 @@ fn main() {
 
     let (pk, sk) = fv.generate_keypair();
 
-    print!("Encrypting a constant vector v of 1s...");
+    println!("Encrypting a constant vector v of 1s...");
     let v = vec![1; fv.n];
 
     let ctv = fv.encrypt(&v, &pk);
 
-    print!("Encrypting a constant vector w of 2s...");
+    println!("Encrypting a constant vector w of 2s...");
     let w = vec![2; fv.n];
     let ctw = fv.encrypt(&w, &pk);
 
     // serialize
-    print!("Serializing the ciphertexts...");
+    println!("Serializing the ciphertexts...");
 
     let serialized_ctv = ctv.to_bytes();
     let serialized_ctw = ctw.to_bytes();
@@ -33,13 +33,13 @@ fn main() {
     let mut deserialized_ctw = FVCiphertext::from_bytes(&serialized_ctw);
 
     // add ctw into ctv
-    print!("Adding the deserialized ciphertexts...");
+    println!("Adding the deserialized ciphertexts...");
     fv.set_context(&mut deserialized_ctv);
     fv.set_context(&mut deserialized_ctw);
 
     fv.add_inplace(&mut deserialized_ctv, &deserialized_ctw);
-    print!("Decrypting the sum...");
+    println!("Decrypting the sum...");
     let pt_actual = fv.decrypt(&deserialized_ctv, &sk);
-    print!("decrypted v+w: ");
+    println!("decrypted v+w: ");
     smartprint(&pt_actual);
 }
