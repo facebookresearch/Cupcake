@@ -194,6 +194,11 @@ where
             poly_multiplier: default_multiplier,
         }
     }
+
+    pub fn set_context(&self, ctxt: &mut FVCiphertext<T>){
+        ctxt.0.set_context(self.context.clone());
+        ctxt.1.set_context(self.context.clone());
+    }
 }
 
 impl FV<Scalar> {

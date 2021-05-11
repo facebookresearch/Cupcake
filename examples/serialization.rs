@@ -30,10 +30,13 @@ fn main() {
 
     // deserializing
     let mut deserialized_ctv = FVCiphertext::from_bytes(&serialized_ctv);
-    let deserialized_ctw = FVCiphertext::from_bytes(&serialized_ctw);
+    let mut deserialized_ctw = FVCiphertext::from_bytes(&serialized_ctw);
 
     // add ctw into ctv
     print!("Adding the deserialized ciphertexts...");
+    fv.set_context(&mut deserialized_ctv);
+    fv.set_context(&mut deserialized_ctw);
+
     fv.add_inplace(&mut deserialized_ctv, &deserialized_ctw);
     print!("Decrypting the sum...");
     let pt_actual = fv.decrypt(&deserialized_ctv, &sk);
