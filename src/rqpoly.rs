@@ -30,7 +30,7 @@ impl<T> RqPoly<T> where T:Clone{
         RqPoly{
             context: None,
             coeffs: coeffs.to_vec(),
-            is_ntt_form: is_ntt_form,
+            is_ntt_form,
         }
     }
 }
@@ -44,7 +44,7 @@ impl<T> PartialEq for RqPoly<T> where T: PartialEq {
             if self.coeffs[i] != other.coeffs[i] { return false; }
         }
         if self.is_ntt_form != other.is_ntt_form { return false; }
-        return true
+         true
     }
 }
 
@@ -80,7 +80,7 @@ where
 {
     pub fn new(n: usize, q: &T) -> Self {
         let mut a = RqPolyContext {
-            n: n,
+            n,
             q: q.clone(),
             is_ntt_enabled: false,
             invroots: vec![],

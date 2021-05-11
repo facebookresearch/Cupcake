@@ -1,10 +1,15 @@
 // use serde::{Serialize, Deserialize};
 use crate::integer_arith::scalar::Scalar;
 use crate::rqpoly::RqPoly;
-use crate::{FV, FVCiphertext};
 use crate::Serializable;
-use crate::traits::*;
+use crate::FVCiphertext;
+
+#[cfg(test)]
+use crate::FV;
+#[cfg(test)]
 use crate::integer_arith::ArithUtils;
+#[cfg(test)]
+use crate::traits::*;
 
 use std::convert::From;
 use std::convert::TryInto;
@@ -98,13 +103,11 @@ mod tests {
     assert_eq!(testpoly, deserialized);
   }
 
-
-
   #[test]
   fn test_fvciphertext_serialization(){
     // test ciphertext serialization
     let fv = FV::<Scalar>::default_2048();
-    let (pk, sk) = fv.generate_keypair();
+    let (pk, _) = fv.generate_keypair();
     let mut v = vec![0; fv.n];
     for i in 0..fv.n {
         v[i] = i as u8;

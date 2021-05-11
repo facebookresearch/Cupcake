@@ -215,7 +215,7 @@ impl FV<Scalar> {
             qdivtwo: Scalar::div(&q, &Scalar::from_u32_raw(2)), // &q/2,
             stdev: 3.2,
             flooding_stdev: 2f64.powi(40),
-            context: context,
+            context,
             poly_multiplier: default_multiplier,
         }
     }

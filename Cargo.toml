@@ -23,6 +23,9 @@ path = "src/lib.rs"
 [[example]]
 name = "basic"
 
+[[example]]
+name = "serialization"
+
 [[bench]]
 name = "example"
 harness = false
