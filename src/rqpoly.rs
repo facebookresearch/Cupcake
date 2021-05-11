@@ -25,11 +25,11 @@ pub struct RqPoly<T> {
     pub is_ntt_form: bool,
 }
 
-impl<T> RqPoly<T>{
-    pub fn new(coeffs: Vec<T>, is_ntt_form:bool) -> Self{
+impl<T> RqPoly<T> where T:Clone{
+    pub fn new(coeffs: &Vec<T>, is_ntt_form:bool) -> Self{
         RqPoly{
             context: None,
-            coeffs: coeffs,
+            coeffs: coeffs.to_vec(),
             is_ntt_form: is_ntt_form,
         }
     }
