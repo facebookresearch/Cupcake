@@ -3,7 +3,6 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 use cupcake::traits::*;
-use cupcake::FVCiphertext;
 fn smartprint<T: std::fmt::Debug>(v: &Vec<T>) {
     println!("[{:?}, {:?}, ..., {:?}]", v[0], v[1], v[v.len() - 1]);
 }
@@ -29,14 +28,11 @@ fn main() {
     let serialized_ctw = ctw.to_bytes();
 
     // deserializing
-    let mut deserialized_ctv = FVCiphertext::from_bytes(&serialized_ctv);
-    let mut deserialized_ctw = FVCiphertext::from_bytes(&serialized_ctw);
+    let mut deserialized_ctv = fv.from_bytes(&serialized_ctv);
+    let deserialized_ctw = fv.from_bytes(&serialized_ctw);
 
     // add ctw into ctv
     println!("Adding the deserialized ciphertexts...");
-    fv.set_context(&mut deserialized_ctv);
-    fv.set_context(&mut deserialized_ctw);
-
     fv.add_inplace(&mut deserialized_ctv, &deserialized_ctw);
     println!("Decrypting the sum...");
     let pt_actual = fv.decrypt(&deserialized_ctv, &sk);

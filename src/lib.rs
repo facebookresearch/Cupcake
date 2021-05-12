@@ -89,6 +89,39 @@
 //! let actual = scheme.decrypt(&ct, &sk);
 //! let expected = mu;
 //! assert_eq!(actual, expected);
+//! ```
+//! # Serialization
+//! We provide methods to serialize  a ciphertext into a ```Vec<u8>```. Note that after deserialization, a proper context needs to be set before the further operations can be done on the ciphertext. See
+//! the following example:
+//! ```
+//! # let scheme = cupcake::default();
+//! # use cupcake::traits::{SKEncryption, PKEncryption};
+//! # let (pk, sk) = scheme.generate_keypair();
+//! # use cupcake::traits::{AdditiveHomomorphicScheme};
+//! use crate::cupcake::traits::Serializable;
+//! let v = vec![1; scheme.n];
+//! let w = vec![1; scheme.n];
+//! let ctv = scheme.encrypt(&v, &pk);
+//! let ctw = scheme.encrypt(&w, &pk);
+//! ```
+//! We can call the `to_bytes` function to serialize.
+//! ```
+//! let ctv_serialized = ctv.to_bytes();
+//! let ctw_serialized = ctw.to_bytes();
+//! ```
+//! In order to deserialize, use `scheme.from_bytes`.
+//! ```
+//! let mut ctv_deserialized = scheme.from_bytes(&ctv_serialized);
+//! let ctw_deserialized = scheme.from_bytes(&ctw_serialized);
+//! assert_eq!(ctv, ctv_deserialized);
+//! ```
+//! We can perform homomorphic operations on deserialized ciphertexts.
+//! ```
+//! ctv_deserialized.add_inplace(& ctw_deserialized);
+//! let expected = vec![2; scheme.n];
+//! let actual = scheme.decrypt(&ctv_deserialized, &sk);
+//! assert_eq!(actual, expected);
+//! ```
 
 
 pub(crate) mod integer_arith;
@@ -169,7 +202,7 @@ where
 // constructor and random poly sampling
 impl<T> FV<T>
 where
-    T: ArithUtils<T> + Clone + PartialEq,
+    T: ArithUtils<T> + Clone + PartialEq + Serializable,
     RqPoly<T>: FiniteRingElt + NTT<T>,
 {
     pub fn new(n: usize, q: &T) -> Self {
@@ -195,7 +228,13 @@ where
         }
     }
 
-    pub fn set_context(&self, ctxt: &mut FVCiphertext<T>){
+    pub fn from_bytes(&self, bytes: &Vec<u8>) -> FVCiphertext<T>{
+        let mut ct = FVCiphertext::<T>::from_bytes(bytes);
+        self.set_context(&mut ct);
+        ct
+    }
+
+    fn set_context(&self, ctxt: &mut FVCiphertext<T>){
         ctxt.0.set_context(self.context.clone());
         ctxt.1.set_context(self.context.clone());
     }
