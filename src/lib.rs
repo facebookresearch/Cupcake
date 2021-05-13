@@ -106,18 +106,49 @@
 //! ```
 //! We can call the `to_bytes` function to serialize.
 //! ```
+//! # let scheme = cupcake::default();
+//! # use cupcake::traits::{SKEncryption, PKEncryption};
+//! # let (pk, sk) = scheme.generate_keypair();
+//! # use cupcake::traits::{AdditiveHomomorphicScheme};
+//! # use crate::cupcake::traits::Serializable;
+//! # let v = vec![1; scheme.n];
+//! # let w = vec![1; scheme.n];
+//! # let ctv = scheme.encrypt(&v, &pk);
+//! # let ctw = scheme.encrypt(&w, &pk);
 //! let ctv_serialized = ctv.to_bytes();
 //! let ctw_serialized = ctw.to_bytes();
 //! ```
 //! In order to deserialize, use `scheme.from_bytes`.
 //! ```
+//! # let scheme = cupcake::default();
+//! # use cupcake::traits::{SKEncryption, PKEncryption};
+//! # let (pk, sk) = scheme.generate_keypair();
+//! # use cupcake::traits::{AdditiveHomomorphicScheme};
+//! # use crate::cupcake::traits::Serializable;
+//! # let v = vec![1; scheme.n];
+//! # let w = vec![1; scheme.n];
+//! # let ctv = scheme.encrypt(&v, &pk);
+//! # let ctw = scheme.encrypt(&w, &pk);
+//! # let ctv_serialized = ctv.to_bytes();
+//! # let ctw_serialized = ctw.to_bytes();
 //! let mut ctv_deserialized = scheme.from_bytes(&ctv_serialized);
 //! let ctw_deserialized = scheme.from_bytes(&ctw_serialized);
 //! assert_eq!(ctv, ctv_deserialized);
 //! ```
 //! We can perform homomorphic operations on deserialized ciphertexts.
 //! ```
-//! ctv_deserialized.add_inplace(& ctw_deserialized);
+//! # let scheme = cupcake::default();
+//! # let (pk, sk) = scheme.generate_keypair();
+//! # use crate::cupcake::traits::*;
+//! # let v = vec![1; scheme.n];
+//! # let w = vec![1; scheme.n];
+//! # let ctv = scheme.encrypt(&v, &pk);
+//! # let ctw = scheme.encrypt(&w, &pk);
+//! # let ctv_serialized = ctv.to_bytes();
+//! # let ctw_serialized = ctw.to_bytes();
+//! # let mut ctv_deserialized = scheme.from_bytes(&ctv_serialized);
+//! # let ctw_deserialized = scheme.from_bytes(&ctw_serialized);
+//! scheme.add_inplace(&mut ctv_deserialized, &ctw_deserialized);
 //! let expected = vec![2; scheme.n];
 //! let actual = scheme.decrypt(&ctv_deserialized, &sk);
 //! assert_eq!(actual, expected);

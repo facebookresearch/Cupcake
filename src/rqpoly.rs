@@ -162,7 +162,6 @@ where
 
     fn forward_transform(&mut self) {
         let context = self.context.as_ref().unwrap();
-
         if self.is_ntt_form {
             panic!("is already in ntt");
         }
@@ -191,7 +190,6 @@ where
 
     fn inverse_transform(&mut self) {
         let context = self.context.as_ref().unwrap();
-
         if !self.is_ntt_form {
             panic!("is already not in ntt");
         }
@@ -228,7 +226,6 @@ where
 
     fn coeffwise_multiply(&self, other: &Self) -> Self {
         let context = self.context.as_ref().unwrap();
-
         let mut c = self.clone();
         for (inputs, cc) in self
             .coeffs

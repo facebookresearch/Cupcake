@@ -14,18 +14,7 @@ use crate::integer_arith::ArithUtils;
 #[cfg(test)]
 use crate::traits::*;
 
-use std::convert::From;
 use std::convert::TryInto;
-
-pub struct ScalarWireModel {
-  pub rep: u64,
-}
-
-impl From<Scalar> for ScalarWireModel {
-  fn from(item: Scalar) -> Self {
-    ScalarWireModel { rep: item.rep() }
-  }
-}
 
 impl Serializable for Scalar {
   fn to_bytes(&self) -> std::vec::Vec<u8> {
@@ -121,23 +110,4 @@ mod tests {
     let ct_deserialized = FVCiphertext::from_bytes(&bytes);
     assert_eq!(ct_deserialized, ct);
   }
-  // fn test_rqpoly_serialization_with_context() {
-  //   let context = RqPolyContext::new(4, &Scalar::new_modulus(12289));
-  //   let arc = Arc::new(context);
-  //   let mut coeffs = Vec::<Scalar>::new();
-  //   for i in 0..4 {
-  //     coeffs.push(Scalar::from_u64_raw(i));
-  //   }
-
-  //   let testpoly = RqPoly::<Scalar>::new(coeffs, false);
-
-  //   let bytes = testpoly.to_bytes();
-  //   let deserialized = RqPoly::<Scalar>::from_bytes(&bytes);
-  //   deserialized.set_context(context);
-
-  //   // assert_eq!(testpoly, deserialized);
-  //   // Check that result is the same.
-
-  // }
-
 }

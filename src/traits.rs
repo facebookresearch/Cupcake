@@ -43,9 +43,9 @@ pub trait AdditiveHomomorphicScheme<CT, PT, SK>: SKEncryption<CT, PT, SK> {
 }
 
 pub trait Serializable{
-
+    /// Serialize to a vector of bytes.
     fn to_bytes(&self) -> Vec<u8>;
 
-    /// If the input `bytes` slice does not have a length of 32.
+    /// Deserialize from a vector of bytes.
     fn from_bytes(bytes: &Vec<u8>) -> Self;
 }
