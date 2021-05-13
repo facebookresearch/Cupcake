@@ -9,7 +9,7 @@ use std::sync::Arc;
 /// Holds the context information for RqPolys, including degree n, modulus q, and optionally precomputed
 /// roots of unity for NTT purposes.
 #[derive(Debug)]
-pub struct RqPolyContext<T> {
+pub(crate) struct RqPolyContext<T> {
     pub n: usize,
     pub q: T,
     pub is_ntt_enabled: bool,
@@ -34,7 +34,7 @@ impl<T> RqPoly<T> where T:Clone{
         }
     }
 
-    pub fn set_context(&mut self, context: Arc<RqPolyContext<T>>){
+    pub(crate) fn set_context(&mut self, context: Arc<RqPolyContext<T>>){
         self.context = Some(context);
     }
 }
