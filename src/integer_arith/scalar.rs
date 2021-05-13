@@ -65,6 +65,10 @@ impl Scalar {
             bit_count: 64 - q.leading_zeros() as usize,
         }
     }
+
+    pub fn rep(&self) -> u64{
+        self.rep
+    }
 }
 
 impl PartialEq for Scalar {

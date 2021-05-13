@@ -20,9 +20,36 @@ pub(crate) struct RqPolyContext<T> {
 /// Polynomials in Rq = Zq[x]/(x^n + 1).
 #[derive(Clone, Debug)]
 pub struct RqPoly<T> {
-    context: Arc<RqPolyContext<T>>,
+    context: Option<Arc<RqPolyContext<T>>>,
     pub coeffs: Vec<T>,
     pub is_ntt_form: bool,
+}
+
+impl<T> RqPoly<T> where T:Clone{
+    pub fn new(coeffs: &Vec<T>, is_ntt_form:bool) -> Self{
+        RqPoly{
+            context: None,
+            coeffs: coeffs.to_vec(),
+            is_ntt_form,
+        }
+    }
+
+    pub(crate) fn set_context(&mut self, context: Arc<RqPolyContext<T>>){
+        self.context = Some(context);
+    }
+}
+
+impl<T> PartialEq for RqPoly<T> where T: PartialEq {
+    fn eq(&self, other: &Self) -> bool {
+        if self.coeffs.len() != other.coeffs.len() {
+            return false
+        }
+        for i in 0..self.coeffs.len(){
+            if self.coeffs[i] != other.coeffs[i] { return false; }
+        }
+        if self.is_ntt_form != other.is_ntt_form { return false; }
+         true
+    }
 }
 
 /// Number-theoretic transform (NTT) and fast polynomial multiplication based on NTT.
@@ -57,7 +84,7 @@ where
 {
     pub fn new(n: usize, q: &T) -> Self {
         let mut a = RqPolyContext {
-            n: n,
+            n,
             q: q.clone(),
             is_ntt_enabled: false,
             invroots: vec![],
@@ -134,12 +161,13 @@ where
     }
 
     fn forward_transform(&mut self) {
+        let context = self.context.as_ref().unwrap();
         if self.is_ntt_form {
             panic!("is already in ntt");
         }
 
-        let n = self.context.n;
-        let q = self.context.q.clone();
+        let n = context.n;
+        let q = context.q.clone();
 
         let mut t = n;
         let mut m = 1;
@@ -148,7 +176,7 @@ where
             for i in 0..m {
                 let j1 = 2 * i * t;
                 let j2 = j1 + t - 1;
-                let phi = &self.context.roots[m + i];
+                let phi = &context.roots[m + i];
                 for j in j1..j2 + 1 {
                     let x = T::mul_mod(&self.coeffs[j + t], &phi, &q);
                     self.coeffs[j + t] = T::sub_mod(&self.coeffs[j], &x, &q);
@@ -161,11 +189,12 @@ where
     }
 
     fn inverse_transform(&mut self) {
+        let context = self.context.as_ref().unwrap();
         if !self.is_ntt_form {
             panic!("is already not in ntt");
         }
-        let n = self.context.n;
-        let q = self.context.q.clone();
+        let n = context.n;
+        let q = context.q.clone();
 
         let mut t = 1;
         let mut m = n;
@@ -175,7 +204,7 @@ where
             let h = m >> 1;
             for i in 0..h {
                 let j2 = j1 + t - 1;
-                let s = &self.context.invroots[h + i];
+                let s = &context.invroots[h + i];
                 for j in j1..j2 + 1 {
                     let u = self.coeffs[j].clone();
                     let v = self.coeffs[j + t].clone();
@@ -196,6 +225,7 @@ where
     }
 
     fn coeffwise_multiply(&self, other: &Self) -> Self {
+        let context = self.context.as_ref().unwrap();
         let mut c = self.clone();
         for (inputs, cc) in self
             .coeffs
@@ -203,7 +233,7 @@ where
             .zip(other.coeffs.iter())
             .zip(c.coeffs.iter_mut())
         {
-            *cc = T::mul_mod(inputs.0, inputs.1, &self.context.q);
+            *cc = T::mul_mod(inputs.0, inputs.1, &context.q);
         }
         c
     }
@@ -229,31 +259,36 @@ where
     T: ArithUtils<T> + Clone,
 {
     fn add_inplace(&mut self, other: &Self) {
+        let context = self.context.as_ref().unwrap();
         let iter = self.coeffs.iter_mut().zip(other.coeffs.iter());
         for (x, y) in iter {
-            *x = T::add_mod(x, y, &self.context.q);
+            *x = T::add_mod(x, y, &context.q);
         }
     }
 
     fn sub_inplace(&mut self, other: &Self) {
+        let context = self.context.as_ref().unwrap();
         let iter = self.coeffs.iter_mut().zip(other.coeffs.iter());
         for (x, y) in iter {
-            *x = T::sub_mod(x, y, &self.context.q);
+            *x = T::sub_mod(x, y, &context.q);
         }
     }
 
     fn negate_inplace(&mut self) {
+        let context = self.context.as_ref().unwrap();
         for x in self.coeffs.iter_mut() {
-            *x = T::sub_mod(&self.context.q, x, &self.context.q);
+            *x = T::sub_mod(&context.q, x, &context.q);
         }
     }
 
     // naive multiplication
     fn multiply(&self, other: &Self) -> Self {
+        // check context exists
+        let context = self.context.as_ref().unwrap();
         let f = &self.coeffs;
         let g = &other.coeffs;
-        let n = self.context.n;
-        let q = self.context.q.clone();
+        let n = context.n;
+        let q = context.q.clone();
         let mut res = vec![T::zero(); n];
 
         for i in 0..n {
@@ -261,7 +296,7 @@ where
                 let tmp = T::mul_mod(&f[j], &g[i - j], &q);
                 res[i] = T::add_mod(&res[i], &tmp, &q);
             }
-            for j in i + 1..self.context.n {
+            for j in i + 1..context.n {
                 let tmp = T::mul_mod(&f[j], &g[n + i - j], &q);
                 res[i] = T::sub_mod(&res[i], &tmp, &q);
             }
@@ -270,7 +305,7 @@ where
         RqPoly {
             coeffs: res,
             is_ntt_form: false,
-            context: self.context.clone(),
+            context: Some(context.clone()),
         }
     }
 }
@@ -300,7 +335,7 @@ pub(crate) mod randutils {
         RqPoly {
             coeffs: c,
             is_ntt_form: false,
-            context: context.clone(),
+            context: Some(context.clone()),
         }
     }
 
@@ -321,7 +356,7 @@ pub(crate) mod randutils {
         RqPoly {
             coeffs: c,
             is_ntt_form: false,
-            context: context,
+            context: Some(context),
         }
     }
 
@@ -347,7 +382,7 @@ pub(crate) mod randutils {
         RqPoly {
             coeffs: c,
             is_ntt_form: false,
-            context: context,
+            context: Some(context),
         }
     }
 
@@ -364,7 +399,7 @@ pub(crate) mod randutils {
         RqPoly {
             coeffs: c,
             is_ntt_form: false,
-            context: context.clone(),
+            context: Some(context.clone()),
         }
     }
 }
@@ -386,7 +421,7 @@ mod tests {
         RqPoly {
             coeffs: c,
             is_ntt_form: false,
-            context: context.clone(),
+            context: Some(context.clone()),
         }
     }
     #[test]
