@@ -57,15 +57,6 @@ impl Scalar {
         }
     }
 
-    /// Construct a new "modulus", which is a u64 plus information needed for fast modular reduction.
-    pub fn new_modulus(q: u64) -> Self {
-        Scalar {
-            rep: q,
-            context: Some(ScalarContext::new(q)),
-            bit_count: 64 - q.leading_zeros() as usize,
-        }
-    }
-
     pub fn rep(&self) -> u64{
         self.rep
     }
@@ -78,6 +69,14 @@ impl PartialEq for Scalar {
 }
 
 impl ArithUtils<Scalar> for Scalar {
+    fn new_modulus(q: u64) -> Scalar {
+        Scalar {
+            rep: q,
+            context: Some(ScalarContext::new(q)),
+            bit_count: 64 - q.leading_zeros() as usize,
+        }
+    }
+
     fn sub(a: &Scalar, b: &Scalar) -> Scalar {
         Scalar::new(a.rep - b.rep)
     }
@@ -164,7 +163,7 @@ impl ArithUtils<Scalar> for Scalar {
         Scalar::new(a.rep * b.rep)
     }
 
-    fn to_u64(a: Scalar) -> u64 {
+    fn to_u64(a: &Scalar) -> u64 {
         a.rep
     }
 

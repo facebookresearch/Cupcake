@@ -10,6 +10,10 @@ pub mod bigint;
 use rand::StdRng;
 /// The trait for utility functions related to scalar-like types.
 pub trait ArithUtils<T> {
+
+    /// Construct a new "modulus", which is a u64 plus information needed for fast modular reduction.
+    fn new_modulus(a: u64) -> T;
+
     fn modulus(a: &T, q: &T) -> T;
 
     fn double(a: &T) -> T;
@@ -47,5 +51,5 @@ pub trait ArithUtils<T> {
     // conversion
     fn from_u32_raw(a: u32) -> T;
     fn from_u64_raw(a: u64) -> T;
-    fn to_u64(a: T) -> u64;
+    fn to_u64(a: &T) -> u64;
 }

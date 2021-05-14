@@ -26,6 +26,9 @@ name = "basic"
 [[example]]
 name = "serialization"
 
+[[example]]
+name = "flexible_ptxt"
+
 [[bench]]
 name = "example"
 harness = false
