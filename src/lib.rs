@@ -488,7 +488,7 @@ mod fv_scalar_tests {
         }
         let ct = fv.encrypt_sk(&v, &sk);
 
-        let pt_actual = fv.decrypt(&ct, &sk);
+        let pt_actual: Vec<u8> = fv.decrypt(&ct, &sk);
 
         assert_eq!(v, pt_actual);
     }
@@ -505,7 +505,7 @@ mod fv_scalar_tests {
         }
         let ct = fv.encrypt_sk(&v, &sk);
 
-        let pt_actual = fv.decrypt(&ct, &sk);
+        let pt_actual: Vec<u8> = fv.decrypt(&ct, &sk);
 
         assert_eq!(v, pt_actual);
     }
@@ -522,7 +522,7 @@ mod fv_scalar_tests {
         }
         let ct = fv.encrypt(&v, &pk);
 
-        let pt_actual = fv.decrypt(&ct, &sk);
+        let pt_actual: Vec<u8> = fv.decrypt(&ct, &sk);
 
         assert_eq!(v, pt_actual);
     }
@@ -541,7 +541,7 @@ mod fv_scalar_tests {
 
         fv.rerandomize(&mut ct, &pk);
 
-        let pt_actual = fv.decrypt(&ct, &sk);
+        let pt_actual: Vec<u8> = fv.decrypt(&ct, &sk);
 
         assert_eq!(v, pt_actual);
     }
@@ -623,7 +623,7 @@ mod fv_bigint_tests {
         }
         let ct = fv.encrypt_sk(&v, &sk);
 
-        let pt_actual = fv.decrypt(&ct, &sk);
+        let pt_actual: Vec<u8> = fv.decrypt(&ct, &sk);
 
         assert_eq!(v, pt_actual);
     }
@@ -640,7 +640,7 @@ mod fv_bigint_tests {
         }
         for _ in 0..10 {
             let ct = fv.encrypt(&v, &pk);
-            let pt_actual = fv.decrypt(&ct, &sk);
+            let pt_actual: Vec<u8> = fv.decrypt(&ct, &sk);
             assert_eq!(v, pt_actual);
         }
     }
@@ -657,7 +657,7 @@ mod fv_bigint_tests {
         }
         for _ in 0..10 {
             let ct = fv.encrypt(&v, &pk);
-            let pt_actual = fv.decrypt(&ct, &sk);
+            let pt_actual: Vec<u8> = fv.decrypt(&ct, &sk);
             assert_eq!(v, pt_actual);
         }
     }
@@ -674,7 +674,7 @@ mod fv_bigint_tests {
         }
         let ct = fv.encrypt(&v, &pk);
 
-        let pt_actual = fv.decrypt(&ct, &sk);
+        let pt_actual: Vec<u8> = fv.decrypt(&ct, &sk);
 
         assert_eq!(v, pt_actual);
     }
@@ -693,7 +693,7 @@ mod fv_bigint_tests {
 
         fv.rerandomize(&mut ct, &pk);
 
-        let pt_actual = fv.decrypt(&ct, &sk);
+        let pt_actual: Vec<u8> = fv.decrypt(&ct, &sk);
 
         assert_eq!(v, pt_actual);
     }

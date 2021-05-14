@@ -2,7 +2,7 @@
 //
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
-use cupcake::traits::{AdditiveHomomorphicScheme, PKEncryption, SKEncryption};
+use cupcake::traits::{AdditiveHomomorphicScheme, PKEncryption, SKEncryption,  KeyGeneration};
 
 fn smartprint<T: std::fmt::Debug>(v: &Vec<T>) {
     println!("[{:?}, {:?}, ..., {:?}]", v[0], v[1], v[v.len() - 1]);
@@ -21,7 +21,7 @@ fn main() {
 
     let mut ctv = fv.encrypt(&v, &pk);
 
-    let pt_original = fv.decrypt(&ctv, &sk);
+    let pt_original: Vec<u8> = fv.decrypt(&ctv, &sk);
     print!("decrypted value: ");
     smartprint(&pt_original);
 
@@ -29,7 +29,7 @@ fn main() {
 
     fv.rerandomize(&mut ctv, &pk);
     print!("decrypted value after reranromization: ");
-    let pt_new = fv.decrypt(&ctv, &sk);
+    let pt_new: Vec<u8> = fv.decrypt(&ctv, &sk);
     smartprint(&pt_new);
 
     print!("Check that the plaintext has not changed...");

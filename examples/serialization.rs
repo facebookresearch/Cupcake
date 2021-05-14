@@ -35,7 +35,7 @@ fn main() {
     println!("Adding the deserialized ciphertexts...");
     fv.add_inplace(&mut deserialized_ctv, &deserialized_ctw);
     println!("Decrypting the sum...");
-    let pt_actual = fv.decrypt(&deserialized_ctv, &sk);
+    let pt_actual: Vec<u8> = fv.decrypt(&deserialized_ctv, &sk);
     println!("decrypted v+w: ");
     smartprint(&pt_actual);
 }

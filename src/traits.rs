@@ -21,7 +21,7 @@ pub trait EncryptionOfZeros<CT, SK>{
 }
 
 /// Trait for symmetric key encryption.
-pub trait SKEncryption<CT, PT, SK>: EncryptionOfZeros<CT, SK>{
+pub trait SKEncryption<CT, PT, SK>: KeyGeneration<CT, SK>{
 
     /// Encrypt a given plaintext
     fn encrypt_sk(&self, pt: &PT, sk: &SK) -> CT;
