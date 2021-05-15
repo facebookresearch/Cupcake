@@ -16,7 +16,7 @@
 //! In order to encrypt and decrypt data, we needs to generate a keypair, i.e. a secret key and a public key.
 //! ```
 //! let scheme = cupcake::default();
-//! use cupcake::traits::{SKEncryption, PKEncryption};
+//! use cupcake::traits::{KeyGeneration};
 //! let (pk, sk) = scheme.generate_keypair();
 //! ```
 //! The public key can be used for encryption and the secret key can be used for encryption or decryption.
@@ -26,7 +26,7 @@
 //! The library currently supports one plaintext type, which is `vec<u8>` of fixed size n. We can encrypt a vector under a public key like so
 //! ```
 //! # let scheme = cupcake::default();
-//! # use cupcake::traits::{SKEncryption, PKEncryption};
+//! # use cupcake::traits::{KeyGeneration, PKEncryption};
 //! # let (pk, sk) = scheme.generate_keypair();
 //! let v = vec![1; scheme.n];
 //! let ct = scheme.encrypt(&v, &pk);
@@ -35,11 +35,11 @@
 //!
 //! ```
 //! # let scheme = cupcake::default();
-//! # use cupcake::traits::{SKEncryption, PKEncryption};
+//! # use cupcake::traits::{KeyGeneration, PKEncryption, SKEncryption};
 //! # let (pk, sk) = scheme.generate_keypair();
 //! # let v = vec![1; scheme.n];
 //! # let ct = scheme.encrypt(&v, &pk);
-//! let w = scheme.decrypt(&ct, &sk);
+//! let w: Vec<u8>= scheme.decrypt(&ct, &sk);
 //! assert_eq!(v, w);
 //! ```
 //! # Homomorphic Operations
@@ -47,7 +47,7 @@
 //! We can encrypt two vectors and add up the resulting ciphertexts.
 //! ```
 //! # let scheme = cupcake::default();
-//! # use cupcake::traits::{SKEncryption, PKEncryption};
+//! # use cupcake::traits::{KeyGeneration, SKEncryption, PKEncryption};
 //! # let (pk, sk) = scheme.generate_keypair();
 //! use cupcake::traits::{AdditiveHomomorphicScheme};
 //! let z1 = vec![1; scheme.n];
@@ -57,36 +57,36 @@
 //! scheme.add_inplace(&mut ctz1, &ctz2);
 //! // Now ctz1 should decrypt to vec![3; scheme.n];
 //! let expected = vec![3; scheme.n];
-//! let actual = scheme.decrypt(&ctz1, &sk);
+//! let actual: Vec<u8> = scheme.decrypt(&ctz1, &sk);
 //! assert_eq!(actual, expected);
 //! ```
 //! Alternatively, we can add a plaintext vector into a ciphertext
 //! ```
 //! # let scheme = cupcake::default();
-//! # use cupcake::traits::{SKEncryption, PKEncryption};
+//! # use cupcake::traits::{KeyGeneration, SKEncryption, PKEncryption};
 //! # let (pk, sk) = scheme.generate_keypair();
-//! # use cupcake::traits::{AdditiveHomomorphicScheme};
+//! # use cupcake::traits::{AdditiveHomomorphicScheme, CipherPlainAddition};
 //! let z = vec![1; scheme.n];
 //! let mut ctz = scheme.encrypt(&z, &pk);
 //! let p = vec![4; scheme.n];
 //! scheme.add_plain_inplace(&mut ctz, &p);
 //! // Now ctz should decrypt to vec![5; scheme.n]
 //! let expected = vec![5; scheme.n];
-//! let actual = scheme.decrypt(&ctz, &sk);
+//! let actual: Vec<u8> = scheme.decrypt(&ctz, &sk);
 //! assert_eq!(actual, expected);
 //! ```
 //! # Rerandomization
 //! Furthermore, you can rerandomize a ciphertext using the public key. The output is another ciphertext which will be still decrypt to the same plaintext, but cannot be linked to the input.
 //! ```
 //! # let scheme = cupcake::default();
-//! # use cupcake::traits::{SKEncryption, PKEncryption};
+//! # use cupcake::traits::{KeyGeneration, SKEncryption, PKEncryption};
 //! # let (pk, sk) = scheme.generate_keypair();
 //! # use cupcake::traits::{AdditiveHomomorphicScheme};
 //! let mu = vec![1; scheme.n];
 //! let mut ct = scheme.encrypt(&mu, &pk);
 //! scheme.rerandomize(&mut ct, &pk);
 //! // The new ct should still decrypt to mu.
-//! let actual = scheme.decrypt(&ct, &sk);
+//! let actual: Vec<u8> = scheme.decrypt(&ct, &sk);
 //! let expected = mu;
 //! assert_eq!(actual, expected);
 //! ```
@@ -95,7 +95,7 @@
 //! the following example:
 //! ```
 //! # let scheme = cupcake::default();
-//! # use cupcake::traits::{SKEncryption, PKEncryption};
+//! # use cupcake::traits::{KeyGeneration, SKEncryption, PKEncryption};
 //! # let (pk, sk) = scheme.generate_keypair();
 //! # use cupcake::traits::{AdditiveHomomorphicScheme};
 //! use crate::cupcake::traits::Serializable;
@@ -107,7 +107,7 @@
 //! We can call the `to_bytes` function to serialize.
 //! ```
 //! # let scheme = cupcake::default();
-//! # use cupcake::traits::{SKEncryption, PKEncryption};
+//! # use cupcake::traits::{KeyGeneration, SKEncryption, PKEncryption};
 //! # let (pk, sk) = scheme.generate_keypair();
 //! # use cupcake::traits::{AdditiveHomomorphicScheme};
 //! # use crate::cupcake::traits::Serializable;
@@ -121,7 +121,7 @@
 //! In order to deserialize, use `scheme.from_bytes`.
 //! ```
 //! # let scheme = cupcake::default();
-//! # use cupcake::traits::{SKEncryption, PKEncryption};
+//! # use cupcake::traits::{KeyGeneration, SKEncryption, PKEncryption};
 //! # let (pk, sk) = scheme.generate_keypair();
 //! # use cupcake::traits::{AdditiveHomomorphicScheme};
 //! # use crate::cupcake::traits::Serializable;
@@ -150,7 +150,7 @@
 //! # let ctw_deserialized = scheme.from_bytes(&ctw_serialized);
 //! scheme.add_inplace(&mut ctv_deserialized, &ctw_deserialized);
 //! let expected = vec![2; scheme.n];
-//! let actual = scheme.decrypt(&ctv_deserialized, &sk);
+//! let actual: Vec<u8>= scheme.decrypt(&ctv_deserialized, &sk);
 //! assert_eq!(actual, expected);
 //! ```
 
@@ -202,6 +202,32 @@ where
     pub flooding_stdev: f64,
     context: Arc<RqPolyContext<T>>,
     poly_multiplier: fn(&RqPoly<T>, &RqPoly<T>) -> RqPoly<T>,
+}
+
+impl<T> FV<T>
+where
+T: ArithUtils<T>{
+    fn convert_pt_u8_to_scalar(&self, pt: &DefaultFVPlaintext) -> FVPlaintext<T>{
+        if T::to_u64(&self.t) != 256u64{
+            panic!("plaintext modulus should be 256")
+        }
+        let mut pt1 = vec![];
+        for pt_coeff in pt.iter(){
+            pt1.push(T::from_u32(*pt_coeff as u32,  &self.t));
+        }
+        pt1
+    }
+
+    fn convert_pt_scalar_to_u8(&self, pt: FVPlaintext<T>) -> DefaultFVPlaintext{
+        if T::to_u64(&self.t) != 256u64{
+            panic!("plaintext modulus should be 256")
+        }
+        let mut pt1 = vec![];
+        for pt_coeff in pt.iter(){
+            pt1.push(T::to_u64(pt_coeff) as u8);
+        }
+        pt1
+    }
 }
 
 impl<T> CipherPlainAddition<FVCiphertext<T>, FVPlaintext<T>> for FV<T>
@@ -427,14 +453,8 @@ where
     T: Clone + ArithUtils<T> + PartialEq,
 {
     fn encrypt(&self, pt: &DefaultFVPlaintext, pk: &FVCiphertext<T>) -> FVCiphertext<T> {
-        if T::to_u64(&self.t) != 256u64{
-            panic!("plaintext modulus should be 256")
-        }
-        let mut pt1 = vec![];
-        for pt_coeff in pt.iter(){
-            pt1.push(T::from_u32(*pt_coeff as u32,  &self.t));
-        }
-        self.encrypt(&(pt1 as FVPlaintext<T>), &pk)
+        let pt1 = self.convert_pt_u8_to_scalar(pt);
+        self.encrypt(&pt1, pk)
     }
 }
 
@@ -444,10 +464,14 @@ where
     T: Clone + ArithUtils<T> + PartialEq,
 {
     fn encrypt_sk(&self, pt: &DefaultFVPlaintext, sk: &SecretKey<T>) -> FVCiphertext<T>
-        { todo!() }
+        {
+            let pt1 = self.convert_pt_u8_to_scalar(pt);
+            self.encrypt_sk(&pt1, sk)
+        }
 
     fn decrypt(&self, ct: &FVCiphertext<T>, sk: &SecretKey<T>) -> DefaultFVPlaintext{
-        todo!()
+        let pt1 = self.decrypt(ct, sk);
+        self.convert_pt_scalar_to_u8(pt1)
     }
 }
 
