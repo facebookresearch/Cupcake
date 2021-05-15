@@ -36,13 +36,16 @@ pub trait PKEncryption<CT, PT, SK>: SKEncryption<CT, PT, SK> {
     fn encrypt(&self, pt: &PT, pk: &CT) -> CT;
 }
 
-/// Trait for additive homomorphic operations.
-pub trait AdditiveHomomorphicScheme<CT, PT, SK>: SKEncryption<CT, PT, SK> {
-    /// Add a ciphertext into another.
-    fn add_inplace(&self, ct1: &mut CT, ct2: &CT);
-
+pub trait CipherPlainAddition<CT, PT>: {
     /// Add a plaintext into a ciphertext.
     fn add_plain_inplace(&self, ct1: &mut CT, pt: &PT);
+}
+
+
+/// Trait for additive homomorphic operations.
+pub trait AdditiveHomomorphicScheme<CT, SK>: EncryptionOfZeros<CT, SK> {
+    /// Add a ciphertext into another.
+    fn add_inplace(&self, ct1: &mut CT, ct2: &CT);
 
     /// Rerandomize a ciphertext in-place. The resulting ciphertext will decrypt to the same
     /// plaintext, while being unlinkable to the input ciphertext.

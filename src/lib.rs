@@ -155,7 +155,7 @@
 //! ```
 
 
-pub(crate) mod integer_arith;
+pub mod integer_arith;
 mod rqpoly;
 pub mod traits;
 mod serialize;
@@ -204,7 +204,37 @@ where
     poly_multiplier: fn(&RqPoly<T>, &RqPoly<T>) -> RqPoly<T>,
 }
 
-impl<T> AdditiveHomomorphicScheme<FVCiphertext<T>, FVPlaintext<T>, SecretKey<T>> for FV<T>
+impl<T> CipherPlainAddition<FVCiphertext<T>, FVPlaintext<T>> for FV<T>
+where
+    RqPoly<T>: FiniteRingElt,
+    T: Clone + ArithUtils<T> + PartialEq,
+{
+    // add a plaintext into a FVCiphertext.
+    fn add_plain_inplace(&self, ct: &mut FVCiphertext<T>, pt: &FVPlaintext<T>) {
+        for (ct_coeff, pt_coeff) in ct.1.coeffs.iter_mut().zip(pt.iter()) {
+            let temp = T::mul(&pt_coeff, &self.delta);
+            *ct_coeff = T::add_mod(ct_coeff, &temp, &self.q);
+        }
+    }
+}
+
+
+impl<T> CipherPlainAddition<FVCiphertext<T>, DefaultFVPlaintext> for FV<T>
+where
+    RqPoly<T>: FiniteRingElt,
+    T: Clone + ArithUtils<T> + PartialEq,
+{
+    // add a plaintext into a FVCiphertext.
+    fn add_plain_inplace(&self, ct: &mut FVCiphertext<T>, pt: &DefaultFVPlaintext) {
+        for (ct_coeff, pt_coeff) in ct.1.coeffs.iter_mut().zip(pt.iter()) {
+            let temp = T::mul(&T::from_u32_raw(*pt_coeff as u32), &self.delta);
+            *ct_coeff = T::add_mod(ct_coeff, &temp, &self.q);
+        }
+    }
+}
+
+
+impl<T> AdditiveHomomorphicScheme<FVCiphertext<T>, SecretKey<T>> for FV<T>
 where
     RqPoly<T>: FiniteRingElt,
     T: Clone + ArithUtils<T> + PartialEq,
@@ -212,15 +242,6 @@ where
     fn add_inplace(&self, ct1: &mut FVCiphertext<T>, ct2: &FVCiphertext<T>) {
         ct1.0.add_inplace(&ct2.0);
         ct1.1.add_inplace(&ct2.1);
-    }
-
-    // add a plaintext into a FVCiphertext.
-    fn add_plain_inplace(&self, ct: &mut FVCiphertext<T>, pt: &FVPlaintext<T>) {
-        // ct1
-        for (ct_coeff, pt_coeff) in ct.1.coeffs.iter_mut().zip(pt.iter()) {
-            let temp = T::mul(&pt_coeff, &self.delta);
-            *ct_coeff = T::add_mod(ct_coeff, &temp, &self.q);
-        }
     }
 
     // rerandomize a ciphertext
@@ -571,7 +592,7 @@ mod fv_scalar_tests {
 
         // ct_v + ct_w.
         fv.add_inplace(&mut ctv, &ctw);
-        let pt_after_add = fv.decrypt(&ctv, &sk);
+        let pt_after_add: DefaultFVPlaintext = fv.decrypt(&ctv, &sk);
         assert_eq!(pt_after_add, vplusw);
     }
 
@@ -600,7 +621,7 @@ mod fv_scalar_tests {
         // ct_v + w.
         fv.add_plain_inplace(&mut ct, &w);
 
-        let pt_after_add = fv.decrypt(&ct, &sk);
+        let pt_after_add: DefaultFVPlaintext = fv.decrypt(&ct, &sk);
 
         assert_eq!(pt_after_add, vplusw);
     }
