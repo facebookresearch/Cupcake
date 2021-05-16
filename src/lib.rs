@@ -669,10 +669,14 @@ mod fv_scalar_tests {
         let fv = crate::default_with_plaintext_mod(t);
         let (pk, sk) = fv.generate_keypair();
         let plain_modulus = fv.t.clone();
-        let pt = vec![Scalar::from_u32(t-1, &plain_modulus); fv.n];
-        let ct = fv.encrypt(&pt, &pk);
-        let pt_actual: Vec<Scalar> = fv.decrypt(&ct, &sk);
-        assert_eq!(pt_actual, pt);
+        let v = vec![Scalar::from_u32(t-1, &plain_modulus); fv.n];
+        let w = vec![Scalar::from_u32(t-1, &plain_modulus); fv.n];
+        let v_plus_w = vec![Scalar::from_u32(t-2, &plain_modulus); fv.n];
+        let mut ctv = fv.encrypt(&v, &pk);
+        let ctw = fv.encrypt(&w, &pk);
+        fv.add_inplace(&mut ctv, &ctw);
+        let pt_actual: Vec<Scalar>= fv.decrypt(&ctv, &sk);
+        assert_eq!(pt_actual, v_plus_w);
     }
 
     #[test]
@@ -681,10 +685,13 @@ mod fv_scalar_tests {
         let fv = crate::default_with_plaintext_mod(t);
         let (pk, sk) = fv.generate_keypair();
         let plain_modulus = fv.t.clone();
-        let pt = vec![Scalar::from_u32(t-1, &plain_modulus); fv.n];
-        let ct = fv.encrypt(&pt, &pk);
+        let v = vec![Scalar::from_u32(t-1, &plain_modulus); fv.n];
+        let w = vec![Scalar::from_u32(1, &plain_modulus); fv.n];
+        let v_plus_w = vec![Scalar::from_u32(0, &plain_modulus); fv.n];
+        let mut ct = fv.encrypt(&v, &pk);
+        fv.add_plain_inplace(&mut ct, &w);
         let pt_actual: Vec<Scalar> = fv.decrypt(&ct, &sk);
-        assert_eq!(pt_actual, pt);
+        assert_eq!(pt_actual, v_plus_w);
     }
 }
 
