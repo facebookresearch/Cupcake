@@ -11,7 +11,7 @@ pub use std::sync::Arc;
 
 /// The ScalarContext class contains useful auxilliary information for fast modular reduction against a Scalar instance.
 #[derive(Debug, PartialEq, Eq, Clone)]
-struct ScalarContext {
+pub(crate) struct ScalarContext {
     barrett_ratio: (u64, u64),
 }
 

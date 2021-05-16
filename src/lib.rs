@@ -505,13 +505,14 @@ where
         let mut c: Vec<T> = vec![];
         for x in phase.coeffs {
             // let mut tmp = x << 8;  // x * t, need to make sure there's no overflow.
-            let mut tmp = T::mul(&x, &T::from_u32_raw(256));
+            let mut tmp = T::mul(&x, &self.t);
             // tmp += &self.qdivtwo;
             tmp = T::add(&tmp, &self.qdivtwo);
             // tmp /= &self.q;
             tmp = T::div(&tmp, &self.q);
             // modulo t.
-            // TODO: actually setting the context correctly.
+            tmp = T::modulus(&tmp, &self.t);
+
             c.push(tmp);
         }
         c
@@ -648,6 +649,42 @@ mod fv_scalar_tests {
         let pt_after_add: DefaultFVPlaintext = fv.decrypt(&ct, &sk);
 
         assert_eq!(pt_after_add, vplusw);
+    }
+
+    #[test]
+    fn test_flexible_plaintext_encrypt() {
+        let t = 199;
+        let fv = crate::default_with_plaintext_mod(t);
+        let (pk, sk) = fv.generate_keypair();
+        let plain_modulus = fv.t.clone();
+        let pt = vec![Scalar::from_u32(t-1, &plain_modulus); fv.n];
+        let ct = fv.encrypt(&pt, &pk);
+        let pt_actual: Vec<Scalar> = fv.decrypt(&ct, &sk);
+        assert_eq!(pt_actual, pt);
+    }
+
+    #[test]
+    fn test_flexible_plaintext_addition() {
+        let t = 199;
+        let fv = crate::default_with_plaintext_mod(t);
+        let (pk, sk) = fv.generate_keypair();
+        let plain_modulus = fv.t.clone();
+        let pt = vec![Scalar::from_u32(t-1, &plain_modulus); fv.n];
+        let ct = fv.encrypt(&pt, &pk);
+        let pt_actual: Vec<Scalar> = fv.decrypt(&ct, &sk);
+        assert_eq!(pt_actual, pt);
+    }
+
+    #[test]
+    fn test_flexible_plaintext_add_plaintext() {
+        let t = 199;
+        let fv = crate::default_with_plaintext_mod(t);
+        let (pk, sk) = fv.generate_keypair();
+        let plain_modulus = fv.t.clone();
+        let pt = vec![Scalar::from_u32(t-1, &plain_modulus); fv.n];
+        let ct = fv.encrypt(&pt, &pk);
+        let pt_actual: Vec<Scalar> = fv.decrypt(&ct, &sk);
+        assert_eq!(pt_actual, pt);
     }
 }
 

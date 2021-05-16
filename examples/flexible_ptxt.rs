@@ -12,37 +12,40 @@ fn smartprint<T: std::fmt::Debug>(v: &Vec<T>) {
 
 fn main() {
     let t = 199;
-    print!("Plaintext modulus chosen to be {}", t);
+    println!("Plaintext modulus chosen to be {}", t);
 
     let fv = cupcake::default_with_plaintext_mod(t);
+
+    println!("Delta = {:?}", fv.delta);
+    println!("q = {:?}", fv.q);
 
     let (pk, sk) = fv.generate_keypair();
 
     let plain_modulus = fv.t.clone();
 
-    print!("Encrypting a constant vector v of 1s...");
+    println!("Encrypting a constant vector v of 1s...");
     let v = vec![Scalar::from_u32(1, &plain_modulus); fv.n];
 
     let mut ctv = fv.encrypt(&v, &pk);
 
     let mut pt_actual: Vec<Scalar> = fv.decrypt(&ctv, &sk);
-    print!("decrypted v: ");
+    println!("decrypted v: ");
     smartprint(&pt_actual);
 
-    print!("Encrypting a constant vector w of (t-1) s...");
+    println!("Encrypting a constant vector w of (t-1) s...");
     let w = vec![Scalar::from_u32(t-1, &plain_modulus); fv.n];
 
     let ctw = fv.encrypt(&w, &pk);
 
     pt_actual = fv.decrypt(&ctw, &sk);
-    print!("decrypted w: ");
+    println!("decrypted w: ");
     smartprint(&pt_actual);
 
     // add ctw into ctv
     fv.add_inplace(&mut ctv, &ctw);
-    print!("Decrypting the sum (should be a vector of 0s)...");
+    println!("Decrypting the sum (should be a vector of 0s)...");
     pt_actual = fv.decrypt(&ctv, &sk);
-    print!("decrypted v+w: ");
+    println!("decrypted v+w: ");
     smartprint(&pt_actual);
 
     // add the plaintext w into the ciphertext
