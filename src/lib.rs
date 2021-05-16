@@ -23,24 +23,39 @@
 //!
 //! # Encryption and Decryption
 //!
-//! The library currently supports one plaintext type, which is `vec<u8>` of fixed size n. We can encrypt a vector under a public key like so
+//! The default plaintext space of Cupcake is `Vec<u8>` of fixed size n. We can encrypt a vector under a public key like so
 //! ```
 //! # let scheme = cupcake::default();
-//! # use cupcake::traits::{KeyGeneration, PKEncryption};
+//! # use cupcake::traits::KeyGeneration;
 //! # let (pk, sk) = scheme.generate_keypair();
+//! use cupcake::traits::{SKEncryption, PKEncryption};
 //! let v = vec![1; scheme.n];
 //! let ct = scheme.encrypt(&v, &pk);
 //! ```
 //! Then, the ciphertext `ct` can be decrypted using the secret key:
-//!
 //! ```
 //! # let scheme = cupcake::default();
-//! # use cupcake::traits::{KeyGeneration, PKEncryption, SKEncryption};
+//! # use cupcake::traits::{KeyGeneration, SKEncryption, PKEncryption};
 //! # let (pk, sk) = scheme.generate_keypair();
 //! # let v = vec![1; scheme.n];
 //! # let ct = scheme.encrypt(&v, &pk);
 //! let w: Vec<u8>= scheme.decrypt(&ct, &sk);
 //! assert_eq!(v, w);
+//! ```
+//! You may also use other plaintext types, which are vectors of `Scalar` of size n. Here `Scalar`  represents an integer modulo a fixed modulus t.
+//! See the following example:
+//! ```
+//! # use cupcake::traits::{KeyGeneration, PKEncryption, SKEncryption};
+//! use cupcake::integer_arith::scalar::Scalar;
+//! use cupcake::integer_arith::ArithUtils;
+//! let t = 199;
+//! let scheme = cupcake::default_with_plaintext_mod(t);
+//! let (pk, sk) = scheme.generate_keypair();
+//! let plain_modulus = scheme.t.clone();
+//! let pt = vec![Scalar::from_u32(t-1, &plain_modulus); scheme.n];
+//! let ct = scheme.encrypt(&pt, &pk);
+//! let pt_actual: Vec<Scalar> = scheme.decrypt(&ct, &sk);
+//! assert_eq!(pt_actual, pt);
 //! ```
 //! # Homomorphic Operations
 //!
