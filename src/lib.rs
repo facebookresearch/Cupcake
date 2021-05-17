@@ -79,7 +79,7 @@
 //! # let scheme = cupcake::default();
 //! # use cupcake::traits::{KeyGeneration, SKEncryption, PKEncryption};
 //! # let (pk, sk) = scheme.generate_keypair();
-//! # use cupcake::traits::{AdditiveHomomorphicScheme, CipherPlainAddition};
+//! use cupcake::traits::CipherPlainAddition;
 //! let z = vec![1; scheme.n];
 //! let mut ctz = scheme.encrypt(&z, &pk);
 //! let p = vec![4; scheme.n];
@@ -205,7 +205,7 @@ pub fn default_with_plaintext_mod(t: u32) -> DefaultShemeType {
 /// (Additive only version of) the Fan-Vercauteren homomoprhic encryption scheme.
 pub struct FV<T>
 where
-    T: ArithUtils<T> + From<u32>,
+    T: ArithUtils<T>,
 {
     pub n: usize,
     pub t: T,
@@ -220,7 +220,7 @@ where
 
 impl<T> FV<T>
 where
-T: ArithUtils<T> + From<u32>{
+T: ArithUtils<T>{
     fn convert_pt_u8_to_scalar(&self, pt: &DefaultFVPlaintext) -> FVPlaintext<T>{
         if T::to_u64(&self.t) != 256u64{
             panic!("plaintext modulus should be 256")
@@ -247,7 +247,7 @@ T: ArithUtils<T> + From<u32>{
 impl<T> CipherPlainAddition<FVCiphertext<T>, FVPlaintext<T>> for FV<T>
 where
     RqPoly<T>: FiniteRingElt,
-    T: Clone + ArithUtils<T> + PartialEq + From<u32>,
+    T: Clone + ArithUtils<T> + PartialEq,
 {
     // add a plaintext into a FVCiphertext.
     fn add_plain_inplace(&self, ct: &mut FVCiphertext<T>, pt: &FVPlaintext<T>) {
@@ -344,7 +344,6 @@ where
 }
 
 impl FV<Scalar> {
-
     /// Construct a scheme with default parameters and plaintext modulus 256.
     pub fn default_2048() -> FV<Scalar> {
         let q = Scalar::new_modulus(18014398492704769u64);
