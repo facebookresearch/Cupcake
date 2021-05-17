@@ -36,6 +36,7 @@ pub trait PKEncryption<CT, PT, SK>: SKEncryption<CT, PT, SK> {
     fn encrypt(&self, pt: &PT, pk: &CT) -> CT;
 }
 
+/// Trait for adding a plaintext to a ciphertext.
 pub trait CipherPlainAddition<CT, PT>: {
     /// Add a plaintext into a ciphertext.
     fn add_plain_inplace(&self, ct1: &mut CT, pt: &PT);
@@ -52,6 +53,7 @@ pub trait AdditiveHomomorphicScheme<CT, SK>: EncryptionOfZeros<CT, SK> {
     fn rerandomize(&self, ct: &mut CT, pk: &CT);
 }
 
+/// Trait for serialization.
 pub trait Serializable{
     /// Serialize to a vector of bytes.
     fn to_bytes(&self) -> Vec<u8>;

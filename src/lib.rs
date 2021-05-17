@@ -47,12 +47,11 @@
 //! ```
 //! # use cupcake::traits::{KeyGeneration, PKEncryption, SKEncryption};
 //! use cupcake::integer_arith::scalar::Scalar;
-//! use cupcake::integer_arith::ArithUtils;
 //! let t = 199;
 //! let scheme = cupcake::default_with_plaintext_mod(t);
 //! let (pk, sk) = scheme.generate_keypair();
 //! let plain_modulus = scheme.t.clone();
-//! let pt = vec![Scalar::from_u32(t-1, &plain_modulus); scheme.n];
+//! let pt = vec![Scalar::from(t-1 as u32); scheme.n];
 //! let ct = scheme.encrypt(&pt, &pk);
 //! let pt_actual: Vec<Scalar> = scheme.decrypt(&ct, &sk);
 //! assert_eq!(pt_actual, pt);
@@ -206,7 +205,7 @@ pub fn default_with_plaintext_mod(t: u32) -> DefaultShemeType {
 /// (Additive only version of) the Fan-Vercauteren homomoprhic encryption scheme.
 pub struct FV<T>
 where
-    T: ArithUtils<T>,
+    T: ArithUtils<T> + From<u32>,
 {
     pub n: usize,
     pub t: T,
@@ -221,7 +220,7 @@ where
 
 impl<T> FV<T>
 where
-T: ArithUtils<T>{
+T: ArithUtils<T> + From<u32>{
     fn convert_pt_u8_to_scalar(&self, pt: &DefaultFVPlaintext) -> FVPlaintext<T>{
         if T::to_u64(&self.t) != 256u64{
             panic!("plaintext modulus should be 256")
@@ -248,7 +247,7 @@ T: ArithUtils<T>{
 impl<T> CipherPlainAddition<FVCiphertext<T>, FVPlaintext<T>> for FV<T>
 where
     RqPoly<T>: FiniteRingElt,
-    T: Clone + ArithUtils<T> + PartialEq,
+    T: Clone + ArithUtils<T> + PartialEq + From<u32>,
 {
     // add a plaintext into a FVCiphertext.
     fn add_plain_inplace(&self, ct: &mut FVCiphertext<T>, pt: &FVPlaintext<T>) {
@@ -263,12 +262,12 @@ where
 impl<T> CipherPlainAddition<FVCiphertext<T>, DefaultFVPlaintext> for FV<T>
 where
     RqPoly<T>: FiniteRingElt,
-    T: Clone + ArithUtils<T> + PartialEq,
+    T: Clone + ArithUtils<T> + PartialEq + From<u32>,
 {
     // add a plaintext into a FVCiphertext.
     fn add_plain_inplace(&self, ct: &mut FVCiphertext<T>, pt: &DefaultFVPlaintext) {
         for (ct_coeff, pt_coeff) in ct.1.coeffs.iter_mut().zip(pt.iter()) {
-            let temp = T::mul(&T::from_u32_raw(*pt_coeff as u32), &self.delta);
+            let temp = T::mul(&T::from(*pt_coeff as u32), &self.delta);
             *ct_coeff = T::add_mod(ct_coeff, &temp, &self.q);
         }
     }
@@ -278,7 +277,7 @@ where
 impl<T> AdditiveHomomorphicScheme<FVCiphertext<T>, SecretKey<T>> for FV<T>
 where
     RqPoly<T>: FiniteRingElt,
-    T: Clone + ArithUtils<T> + PartialEq,
+    T: Clone + ArithUtils<T> + PartialEq +  From<u32>,
 {
     fn add_inplace(&self, ct1: &mut FVCiphertext<T>, ct2: &FVCiphertext<T>) {
         ct1.0.add_inplace(&ct2.0);
@@ -301,14 +300,14 @@ where
 // constructor and random poly sampling
 impl<T> FV<T>
 where
-    T: ArithUtils<T> + Clone + PartialEq + Serializable,
+    T: ArithUtils<T> + Clone + PartialEq + Serializable + From<u32>,
     RqPoly<T>: FiniteRingElt + NTT<T>,
 {
-    pub fn new_u8_ptxt(n: usize, q: &T) -> Self {
-        Self::new(n, &T::new_modulus(256), q)
+    pub fn new(n: usize, q: &T) -> Self {
+        Self::new_with_ptxt_mod(n, &T::new_modulus(256), q)
     }
 
-    pub fn new(n: usize, t: &T, q: &T) -> Self {
+    pub fn new_with_ptxt_mod(n: usize, t: &T, q: &T) -> Self {
         let context = Arc::new(RqPolyContext::new(n, q));
         type RqPolyMultiplier<T> = fn(&RqPoly<T>, &RqPoly<T>) -> RqPoly<T>;
         let default_multiplier: RqPolyMultiplier<T>;
@@ -324,7 +323,7 @@ where
             t: t.clone(),
             flooding_stdev: 2f64.powi(40),
             delta: T::div(q, &t), // &q/t,
-            qdivtwo: T::div(q, &T::from_u32_raw(2)), // &q/2,
+            qdivtwo: T::div(q, &T::from(2)), // &q/2,
             q: q.clone(),
             stdev: 3.2,
             context,
@@ -349,7 +348,7 @@ impl FV<Scalar> {
     /// Construct a scheme with default parameters and plaintext modulus 256.
     pub fn default_2048() -> FV<Scalar> {
         let q = Scalar::new_modulus(18014398492704769u64);
-        Self::new_u8_ptxt(2048, &q)
+        Self::new(2048, &q)
     }
 
     /// Construct a scheme with provided plaintext modulus.
@@ -359,7 +358,7 @@ impl FV<Scalar> {
         }
         let q = Scalar::new_modulus(18014398492704769u64);
         let t = Scalar::new_modulus(t as u64);
-        Self::new(2048, &t, &q)
+        Self::new_with_ptxt_mod(2048, &t, &q)
     }
 }
 
@@ -389,7 +388,7 @@ impl FV<BigInt> {
 impl<T> KeyGeneration<FVCiphertext<T>,  SecretKey<T>> for FV<T>
 where
     RqPoly<T>: FiniteRingElt,
-    T: Clone + ArithUtils<T> + PartialEq,
+    T: Clone + ArithUtils<T> + PartialEq  + From<u32>,
 {
     fn generate_key(&self) -> SecretKey<T> {
         let mut skpoly = rqpoly::randutils::sample_ternary_poly(self.context.clone());
@@ -413,7 +412,7 @@ where
 impl<T> EncryptionOfZeros<FVCiphertext<T>,  SecretKey<T>> for FV<T>
 where
     RqPoly<T>: FiniteRingElt,
-    T: Clone + ArithUtils<T> + PartialEq,
+    T: Clone + ArithUtils<T> + PartialEq  + From<u32>,
 {
     fn encrypt_zero(&self, pk: &FVCiphertext<T>) -> FVCiphertext<T> {
         let mut u = rqpoly::randutils::sample_ternary_poly_prng(self.context.clone());
@@ -446,7 +445,7 @@ where
 impl<T> PKEncryption<FVCiphertext<T>, FVPlaintext<T>, SecretKey<T>> for FV<T>
 where
     RqPoly<T>: FiniteRingElt,
-    T: Clone + ArithUtils<T> + PartialEq,
+    T: Clone + ArithUtils<T> + PartialEq  + From<u32>,
 {
     fn encrypt(&self, pt: &FVPlaintext<T>, pk: &FVCiphertext<T>) -> FVCiphertext<T> {
         // use public key to encrypt
@@ -465,7 +464,7 @@ where
 impl<T> PKEncryption<FVCiphertext<T>, DefaultFVPlaintext, SecretKey<T>> for FV<T>
 where
     RqPoly<T>: FiniteRingElt,
-    T: Clone + ArithUtils<T> + PartialEq,
+    T: Clone + ArithUtils<T> + PartialEq + From<u32>,
 {
     fn encrypt(&self, pt: &DefaultFVPlaintext, pk: &FVCiphertext<T>) -> FVCiphertext<T> {
         let pt1 = self.convert_pt_u8_to_scalar(pt);
@@ -476,7 +475,7 @@ where
 impl<T> SKEncryption<FVCiphertext<T>, DefaultFVPlaintext, SecretKey<T>> for FV<T>
 where
     RqPoly<T>: FiniteRingElt,
-    T: Clone + ArithUtils<T> + PartialEq,
+    T: Clone + ArithUtils<T> + PartialEq + From<u32>,
 {
     fn encrypt_sk(&self, pt: &DefaultFVPlaintext, sk: &SecretKey<T>) -> FVCiphertext<T>
         {
@@ -494,7 +493,7 @@ where
 impl<T> SKEncryption<FVCiphertext<T>, FVPlaintext<T>, SecretKey<T>> for FV<T>
 where
     RqPoly<T>: FiniteRingElt,
-    T: Clone + ArithUtils<T> + PartialEq,
+    T: Clone + ArithUtils<T> + PartialEq + From<u32>,
 {
     fn encrypt_sk(&self, pt: &FVPlaintext<T>, sk: &SecretKey<T>) -> FVCiphertext<T> {
         let e = rqpoly::randutils::sample_gaussian_poly(self.context.clone(), self.stdev);
@@ -539,7 +538,7 @@ mod fv_scalar_tests {
     use super::*;
     #[test]
     fn test_sk_encrypt_toy_param_scalar() {
-        let fv = FV::new_u8_ptxt(16, &Scalar::new_modulus(65537));
+        let fv = FV::new(16, &Scalar::new_modulus(65537));
 
         let sk = fv.generate_key();
 

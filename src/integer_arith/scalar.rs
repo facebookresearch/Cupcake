@@ -11,7 +11,7 @@ pub use std::sync::Arc;
 
 /// The ScalarContext class contains useful auxilliary information for fast modular reduction against a Scalar instance.
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub(crate) struct ScalarContext {
+struct ScalarContext {
     barrett_ratio: (u64, u64),
 }
 
@@ -65,6 +65,18 @@ impl Scalar {
 impl PartialEq for Scalar {
     fn eq(&self, other: &Self) -> bool {
         self.rep == other.rep
+    }
+}
+
+impl From<u32> for Scalar {
+    fn from(item: u32) -> Self {
+        Scalar {  context: None, rep: item as u64, bit_count: 0 }
+    }
+}
+
+impl From<u64> for Scalar {
+    fn from(item: u64) -> Self {
+        Scalar {  context: None, rep: item, bit_count: 0 }
     }
 }
 
@@ -293,16 +305,16 @@ mod tests {
     use super::*;
     #[test]
     fn test_bitlength() {
-        assert_eq!(Scalar::from_u32_raw(2).bit_length(), 2);
-        assert_eq!(Scalar::from_u32_raw(16).bit_length(), 5);
+        assert_eq!(Scalar::from(2u32).bit_length(), 2);
+        assert_eq!(Scalar::from(16u32).bit_length(), 5);
         assert_eq!(Scalar::from_u64_raw(18014398492704769u64).bit_length(), 54);
     }
 
     #[test]
     fn test_getbits() {
-        assert_eq!(Scalar::from_u32_raw(1).get_bits(), vec![true]);
-        assert_eq!(Scalar::from_u32_raw(2).get_bits(), vec![false, true]);
-        assert_eq!(Scalar::from_u32_raw(5).get_bits(), vec![true, false, true]);
+        assert_eq!(Scalar::from(1u32).get_bits(), vec![true]);
+        assert_eq!(Scalar::from(2u32).get_bits(), vec![false, true]);
+        assert_eq!(Scalar::from(5u32).get_bits(), vec![true, false, true]);
         assert_eq!(
             Scalar::from_u64_raw(127).get_bits(),
             vec![true, true, true, true, true, true, true]
