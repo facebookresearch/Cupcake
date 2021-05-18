@@ -18,7 +18,7 @@ fn main() {
 
     let mut ctv = fv.encrypt(&v, &pk);
 
-    let mut pt_actual = fv.decrypt(&ctv, &sk);
+    let mut pt_actual: Vec<u8> = fv.decrypt(&ctv, &sk);
     print!("decrypted v: ");
     smartprint(&pt_actual);
 

@@ -80,7 +80,7 @@ pub trait FiniteRingElt {
 
 impl<T> RqPolyContext<T>
 where
-    T: ArithUtils<T> + PartialEq + Clone,
+    T: ArithUtils<T> + PartialEq + Clone + From<u32>,
 {
     pub fn new(n: usize, q: &T) -> Self {
         let mut a = RqPolyContext {
@@ -123,7 +123,7 @@ where
     }
 
     pub fn find_root(&self) -> Option<T> {
-        let bign = T::from_u32_raw(self.n as u32);
+        let bign = T::from(self.n as u32);
         let q_minus_one = T::sub(&self.q, &T::one());
 
         let power = T::div(&q_minus_one, &T::double(&bign));
@@ -320,14 +320,14 @@ pub(crate) mod randutils {
 
     pub(crate) fn sample_ternary_poly<T>(context: Arc<RqPolyContext<T>>) -> RqPoly<T>
     where
-        T: ArithUtils<T>,
+        T: ArithUtils<T> + From<u32>,
     {
         let mut rng = OsRng::new().unwrap();
         let mut c = vec![];
         for _x in 0..context.n {
             let t = rng.gen_range(-1i32, 2i32);
             if t >= 0 {
-                c.push(T::from_u32_raw(t as u32));
+                c.push(T::from(t as u32));
             } else {
                 c.push(T::sub(&context.q, &T::one()));
             }
@@ -341,14 +341,14 @@ pub(crate) mod randutils {
 
     pub(crate) fn sample_ternary_poly_prng<T>(context: Arc<RqPolyContext<T>>) -> RqPoly<T>
     where
-        T: ArithUtils<T>,
+        T: ArithUtils<T> + From<u32>,
     {
         let mut rng = StdRng::from_entropy();
         let mut c = vec![];
         for _x in 0..context.n {
             let t = rng.gen_range(-1i32, 2i32);
             if t >= 0 {
-                c.push(T::from_u32_raw(t as u32));
+                c.push(T::from(t as u32));
             } else {
                 c.push(T::sub(&context.q, &T::one()));
             }
@@ -389,7 +389,7 @@ pub(crate) mod randutils {
     /// Sample a uniform polynomial in the ring Rq.
     pub(crate) fn sample_uniform_poly<T>(context: Arc<RqPolyContext<T>>) -> RqPoly<T>
     where
-        T: ArithUtils<T>,
+        T: ArithUtils<T> + From<u32>,
     {
         let mut c = vec![];
         let mut rng = StdRng::from_entropy();
@@ -411,11 +411,11 @@ mod tests {
 
     fn from_vec<T>(v: &Vec<u32>, context: Arc<RqPolyContext<T>>) -> RqPoly<T>
     where
-        T: ArithUtils<T>,
+        T: ArithUtils<T> + From<u32>,
     {
         let mut c = vec![];
         for _x in 0..context.n {
-            let tmp = T::from_u32_raw(v[_x]);
+            let tmp = T::from(v[_x]);
             c.push(T::modulus(&tmp, &context.q));
         }
         RqPoly {
@@ -432,7 +432,7 @@ mod tests {
 
         let mut testpoly = from_vec(&v, context.clone());
 
-        let tmp = Scalar::modulus(&Scalar::from_u32_raw(101), &q);
+        let tmp = Scalar::modulus(&Scalar::from(101 as u32), &q);
         testpoly.coeffs[0] = tmp.clone();
 
         testpoly.forward_transform();

@@ -57,15 +57,6 @@ impl Scalar {
         }
     }
 
-    /// Construct a new "modulus", which is a u64 plus information needed for fast modular reduction.
-    pub fn new_modulus(q: u64) -> Self {
-        Scalar {
-            rep: q,
-            context: Some(ScalarContext::new(q)),
-            bit_count: 64 - q.leading_zeros() as usize,
-        }
-    }
-
     pub fn rep(&self) -> u64{
         self.rep
     }
@@ -77,7 +68,27 @@ impl PartialEq for Scalar {
     }
 }
 
+impl From<u32> for Scalar {
+    fn from(item: u32) -> Self {
+        Scalar {  context: None, rep: item as u64, bit_count: 0 }
+    }
+}
+
+impl From<u64> for Scalar {
+    fn from(item: u64) -> Self {
+        Scalar {  context: None, rep: item, bit_count: 0 }
+    }
+}
+
 impl ArithUtils<Scalar> for Scalar {
+    fn new_modulus(q: u64) -> Scalar {
+        Scalar {
+            rep: q,
+            context: Some(ScalarContext::new(q)),
+            bit_count: 64 - q.leading_zeros() as usize,
+        }
+    }
+
     fn sub(a: &Scalar, b: &Scalar) -> Scalar {
         Scalar::new(a.rep - b.rep)
     }
@@ -164,7 +175,7 @@ impl ArithUtils<Scalar> for Scalar {
         Scalar::new(a.rep * b.rep)
     }
 
-    fn to_u64(a: Scalar) -> u64 {
+    fn to_u64(a: &Scalar) -> u64 {
         a.rep
     }
 
@@ -294,16 +305,16 @@ mod tests {
     use super::*;
     #[test]
     fn test_bitlength() {
-        assert_eq!(Scalar::from_u32_raw(2).bit_length(), 2);
-        assert_eq!(Scalar::from_u32_raw(16).bit_length(), 5);
+        assert_eq!(Scalar::from(2u32).bit_length(), 2);
+        assert_eq!(Scalar::from(16u32).bit_length(), 5);
         assert_eq!(Scalar::from_u64_raw(18014398492704769u64).bit_length(), 54);
     }
 
     #[test]
     fn test_getbits() {
-        assert_eq!(Scalar::from_u32_raw(1).get_bits(), vec![true]);
-        assert_eq!(Scalar::from_u32_raw(2).get_bits(), vec![false, true]);
-        assert_eq!(Scalar::from_u32_raw(5).get_bits(), vec![true, false, true]);
+        assert_eq!(Scalar::from(1u32).get_bits(), vec![true]);
+        assert_eq!(Scalar::from(2u32).get_bits(), vec![false, true]);
+        assert_eq!(Scalar::from(5u32).get_bits(), vec![true, false, true]);
         assert_eq!(
             Scalar::from_u64_raw(127).get_bits(),
             vec![true, true, true, true, true, true, true]
