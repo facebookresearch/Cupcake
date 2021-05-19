@@ -212,6 +212,7 @@ where
     pub plaintext_mods: Vec<T>,
     pub q: T,
     pub delta: T,
+    pub deltas: Vec<T>,
     pub stdev: f64,
     pub qdivtwo: T,
     pub flooding_stdev: f64,
@@ -322,8 +323,10 @@ where
         FV {
             n,
             t: t.clone(),
+            plaintext_mods: vec![],
             flooding_stdev: 2f64.powi(40),
             delta: T::div(q, &t), // &q/t,
+            deltas: vec![],
             qdivtwo: T::div(q, &T::from(2)), // &q/2,
             q: q.clone(),
             stdev: 3.2,
@@ -331,6 +334,40 @@ where
             poly_multiplier: default_multiplier,
         }
     }
+
+    pub fn new_with_multiple_plaintext_moduli(n:  usize, moduli: &Vec<T>, q: &T) -> Self{
+        let context = Arc::new(RqPolyContext::new(n, q));
+        type RqPolyMultiplier<T> = fn(&RqPoly<T>, &RqPoly<T>) -> RqPoly<T>;
+        let default_multiplier: RqPolyMultiplier<T>;
+        if context.is_ntt_enabled {
+            default_multiplier =
+                |op1: &RqPoly<T>, op2: &RqPoly<T>| -> RqPoly<T> { op1.multiply_fast(op2) };
+        } else {
+            default_multiplier =
+                |op1: &RqPoly<T>, op2: &RqPoly<T>| -> RqPoly<T> { op1.multiply(op2) };
+        }
+
+        // compute all the deltas.
+        let mut deltas: Vec<T> = vec![];
+        for ptxt_mod in moduli.iter(){
+            deltas.push(T::div(q, ptxt_mod));
+        }
+
+        FV {
+            n,
+            t: moduli[0].clone(),
+            plaintext_mods: moduli.clone(),
+            flooding_stdev: 2f64.powi(40),
+            delta: T::div(q, &moduli[0].clone()), // &q/t,
+            deltas: deltas,
+            qdivtwo: T::div(q, &T::from(2)), // &q/2,
+            q: q.clone(),
+            stdev: 3.2,
+            context,
+            poly_multiplier: default_multiplier,
+        }
+    }
+
 
     pub fn from_bytes(&self, bytes: &Vec<u8>) -> FVCiphertext<T>{
         let mut ct = FVCiphertext::<T>::from_bytes(bytes);
