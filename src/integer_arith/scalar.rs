@@ -3,6 +3,7 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 use crate::integer_arith::ArithUtils;
+use crate::integer_arith::BasicScalarTrait;
 use modinverse::modinverse;
 use rand::rngs::StdRng;
 use rand::FromEntropy;
@@ -66,6 +67,10 @@ impl PartialEq for Scalar {
     fn eq(&self, other: &Self) -> bool {
         self.rep == other.rep
     }
+}
+
+impl BasicScalarTrait for Scalar{
+
 }
 
 impl From<u32> for Scalar {

@@ -53,3 +53,9 @@ pub trait ArithUtils<T> {
     fn from_u64_raw(a: u64) -> T;
     fn to_u64(a: &T) -> u64;
 }
+
+
+///
+pub trait BasicScalarTrait: Clone + PartialEq + std::fmt::Debug + From<u32>{
+
+}
