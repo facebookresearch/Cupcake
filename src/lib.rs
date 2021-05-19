@@ -209,6 +209,7 @@ where
 {
     pub n: usize,
     pub t: T,
+    pub plaintext_mods: Vec<T>,
     pub q: T,
     pub delta: T,
     pub stdev: f64,
@@ -358,6 +359,24 @@ impl FV<Scalar> {
         let q = Scalar::new_modulus(18014398492704769u64);
         let t = Scalar::new_modulus(t as u64);
         Self::new_with_ptxt_mod(2048, &t, &q)
+    }
+
+    /// Construct a scheme with provided plaintext modulus.
+    pub fn default_2048_with_multiple_moduli(mods: &Vec<u32>) -> FV<Scalar> {
+        if mods.len() > 2048{
+            panic!("length of plaintext mods should not exceed 2048");
+        }
+        // for
+        let mut mods_as_scalar: Vec<Scalar> = vec![];
+        for modulus in mods.iter(){
+            if *modulus > 2u32.pow(10){
+                panic!("plain text modulus should not be more than 10 bits.")
+            }
+            mods_as_scalar.push(Scalar::from(*modulus));
+        }
+
+        let q = Scalar::new_modulus(18014398492704769u64);
+        Self::new_with_multiple_plaintext_moduli(2048, &mods_as_scalar, &q)
     }
 }
 
