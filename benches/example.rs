@@ -182,7 +182,7 @@ fn decryption(bench: &mut Bencher) {
     }
     let ct = fv.encrypt_sk(&v, &sk);
     bench.iter(|| {
-        let _ = fv.decrypt(&ct, &sk);
+        let _:Vec<u8> = fv.decrypt(&ct, &sk);
     })
 }
 

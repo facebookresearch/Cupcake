@@ -519,6 +519,10 @@ where
                 temp = T::mul(&y, &self.delta);
             }
             *x = T::add_mod(x, &temp, &self.q);
+            //TODO remove debug
+            if *x > self.q{
+                println!("overflow, x = {:?}", *x);
+            }
         }
         (c0, c1)
     }
@@ -565,7 +569,7 @@ where
         let mut b = (self.poly_multiplier)(&a, &sk.0);
         b.add_inplace(&e);
 
-        // add scaled plaintext to
+        // add scaled plaintext to b
         let iter = b.coeffs.iter_mut().zip(pt.iter());
         for (x, y) in iter {
             let temp = T::mul(&y, &self.delta);
@@ -586,21 +590,20 @@ where
         for x in phase.coeffs {
             // x * t, need to make sure there's no overflow.
             let mut tmp:T;
+            let t:&T;
             if num_mods == 0{
-                tmp = T::mul(&x, &self.t);
+                t = &self.t;
+            }else{
+                t = &self.plaintext_mods[index % num_mods];
             }
-            else{
-                tmp = T::mul(&x, &self.plaintext_mods[index % num_mods]);
-                index += 1;
-            }
-
+            tmp = T::mul(&x, t);
+            index += 1;
             // tmp += &self.qdivtwo;
             tmp = T::add(&tmp, &self.qdivtwo);
             // tmp /= &self.q;
             tmp = T::div(&tmp, &self.q);
             // modulo t.
-            tmp = T::modulus(&tmp, &self.t);
-
+            tmp = T::modulus(&tmp, t);
             c.push(tmp);
         }
         c
@@ -789,14 +792,12 @@ mod fv_scalar_tests {
         let fv = FV::default_2048_with_multiple_moduli(&plain_mods);
         let (pk, sk) = fv.generate_keypair();
         let mut v = vec![];
-        let mut expected: Vec<Scalar> = vec![];
         for i in 0..fv.n{
-            v.push(Scalar::from(i as u32));
-            expected.push(Scalar::from( (i as u32) % plain_mods[i%2] as u32))
+            v.push(Scalar::from( (i as u32) % plain_mods[i%2] as u32))
         }
         let ct = fv.encrypt(&v, &pk);
         let pt_actual: Vec<Scalar> = fv.decrypt(&ct, &sk);
-        assert_eq!(pt_actual, expected);
+        assert_eq!(pt_actual, v);
     }
 }
 

@@ -55,7 +55,5 @@ pub trait ArithUtils<T> {
 }
 
 
-///
-pub trait BasicScalarTrait: Clone + PartialEq + std::fmt::Debug + From<u32>{
-
-}
+/// An umbrella trait that covers some basic traits.
+pub trait BasicScalarTrait: Clone + PartialEq + std::fmt::Debug + From<u32> + Ord + Into<u64>{}

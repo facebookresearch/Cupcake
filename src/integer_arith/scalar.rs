@@ -9,7 +9,7 @@ use rand::rngs::StdRng;
 use rand::FromEntropy;
 use rand::RngCore;
 pub use std::sync::Arc;
-
+use std::cmp::Ordering;
 /// The ScalarContext class contains useful auxilliary information for fast modular reduction against a Scalar instance.
 #[derive(Debug, PartialEq, Eq, Clone)]
 struct ScalarContext {
@@ -66,6 +66,20 @@ impl Scalar {
 impl PartialEq for Scalar {
     fn eq(&self, other: &Self) -> bool {
         self.rep == other.rep
+    }
+}
+
+impl Eq for Scalar {}
+
+impl PartialOrd for Scalar {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Scalar {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.rep.cmp(&other.rep)
     }
 }
 
@@ -186,6 +200,12 @@ impl ArithUtils<Scalar> for Scalar {
 
     fn add(a: &Scalar, b: &Scalar) -> Scalar {
         Scalar::new(a.rep + b.rep)
+    }
+}
+
+impl From<Scalar> for u64{
+    fn from(item: Scalar) -> u64 {
+        item.rep
     }
 }
 
