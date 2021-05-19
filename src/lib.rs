@@ -335,6 +335,7 @@ where
         }
     }
 
+    #[cfg(feature = "multi-moduli")]
     pub fn new_with_multiple_plaintext_moduli(n:  usize, moduli: &Vec<T>, q: &T) -> Self{
         let context = Arc::new(RqPolyContext::new(n, q));
         type RqPolyMultiplier<T> = fn(&RqPoly<T>, &RqPoly<T>) -> RqPoly<T>;
@@ -398,6 +399,7 @@ impl FV<Scalar> {
         Self::new_with_ptxt_mod(2048, &t, &q)
     }
 
+    #[cfg(feature = "multi-moduli")]
     /// Construct a scheme with provided plaintext modulus.
     pub fn default_2048_with_multiple_moduli(mods: &Vec<u32>) -> FV<Scalar> {
         if mods.len() > 2048{
@@ -787,6 +789,7 @@ mod fv_scalar_tests {
 
 
     #[test]
+    #[cfg(feature = "multi-moduli")]
     fn test_multiple_plaintext_mods_encrypt() {
         let plain_mods = vec![199,257];
         let fv = FV::default_2048_with_multiple_moduli(&plain_mods);
