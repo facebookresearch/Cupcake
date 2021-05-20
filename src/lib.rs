@@ -787,6 +787,13 @@ mod fv_scalar_tests {
         assert_eq!(pt_actual, v_plus_w);
     }
 
+    #[test]
+    #[should_panic(expected = "plain text modulus should not be more than 10 bits.")]
+    fn test_flexible_plaintext_mod_too_large() {
+        let plain_mod = 1025;
+        let _ = crate::default_with_plaintext_mod(plain_mod);
+    }
+
 
     #[test]
     #[cfg(feature = "multi-moduli")]
@@ -802,6 +809,15 @@ mod fv_scalar_tests {
         let pt_actual: Vec<Scalar> = fv.decrypt(&ct, &sk);
         assert_eq!(pt_actual, v);
     }
+
+    #[test]
+    #[cfg(feature = "multi-moduli")]
+    #[should_panic(expected = "length of plaintext mods should not exceed 2048")]
+    fn test_multiple_plaintext_mods_too_many_mods() {
+        let plain_mods = vec![199; 2049];
+        let _ = FV::default_2048_with_multiple_moduli(&plain_mods);
+    }
+
 }
 
 // unit tests.
