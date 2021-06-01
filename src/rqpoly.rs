@@ -335,7 +335,7 @@ pub(crate) mod randutils {
         RqPoly {
             coeffs: c,
             is_ntt_form: false,
-            context: Some(context.clone()),
+            context: Some(context),
         }
     }
 
@@ -399,7 +399,7 @@ pub(crate) mod randutils {
         RqPoly {
             coeffs: c,
             is_ntt_form: false,
-            context: Some(context.clone()),
+            context: Some(context),
         }
     }
 }
