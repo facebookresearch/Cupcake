@@ -170,10 +170,17 @@
 
 
 pub mod integer_arith;
+#[cfg(feature = "bench")]
+pub mod rqpoly;
+#[cfg(not(feature = "bench"))]
 mod rqpoly;
 pub mod traits;
 mod serialize;
 mod utils;
+#[cfg(feature = "bench")]
+pub mod randutils;
+#[cfg(not(feature = "bench"))]
+mod randutils;
 
 use integer_arith::scalar::Scalar;
 use integer_arith::ArithUtils;

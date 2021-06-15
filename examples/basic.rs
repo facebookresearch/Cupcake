@@ -24,7 +24,6 @@ fn main() {
 
     print!("Encrypting a constant vector w of 2s...");
     let w = vec![2; fv.n];
-
     let ctw = fv.encrypt(&w, &pk);
 
     pt_actual = fv.decrypt(&ctw, &sk);

@@ -9,7 +9,7 @@ use std::sync::Arc;
 /// Holds the context information for RqPolys, including degree n, modulus q, and optionally precomputed
 /// roots of unity for NTT purposes.
 #[derive(Debug)]
-pub(crate) struct RqPolyContext<T> {
+pub struct RqPolyContext<T> {
     pub n: usize,
     pub q: T,
     pub is_ntt_enabled: bool,
@@ -20,7 +20,7 @@ pub(crate) struct RqPolyContext<T> {
 /// Polynomials in Rq = Zq[x]/(x^n + 1).
 #[derive(Clone, Debug)]
 pub struct RqPoly<T> {
-    context: Option<Arc<RqPolyContext<T>>>,
+    pub(crate) context: Option<Arc<RqPolyContext<T>>>,
     pub coeffs: Vec<T>,
     pub is_ntt_form: bool,
 }

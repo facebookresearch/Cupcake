@@ -20,12 +20,21 @@ bencher = "0.1.5"
 name = "cupcake"
 path = "src/lib.rs"
 
+[features]
+bench = []
+
+
 [[example]]
 name = "basic"
 
 [[example]]
 name = "serialization"
 
+# [[bench]]
+# name = "scheme"
+# harness = false
+
 [[bench]]
-name = "example"
+name = "polyops"
 harness = false
+required-features = ["bench"]

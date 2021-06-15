@@ -4,13 +4,13 @@
 // LICENSE file in the root directory of this source tree.
 #[macro_use]
 extern crate bencher;
-
+pub use std::sync::Arc;
 use bencher::Bencher;
 use cupcake::traits::*;
-// use cupcake::rqpoly::{RqPoly, RqPolyContext};
-// use rand::rngs::StdRng;
-// use rand::FromEntropy;
-
+use cupcake::rqpoly::{NTT,  RqPolyContext};
+use cupcake::randutils;
+use cupcake::integer_arith::scalar::Scalar;
+use cupcake::integer_arith::ArithUtils;
 // fn mod_mul(bench: &mut Bencher) {
 //     let fv = FV::<BigInt>::default_2048();
 //     let a = BigInt::sample_below(&fv.q);
@@ -20,16 +20,16 @@ use cupcake::traits::*;
 //     })
 // }
 
-// fn scalar_ntt(bench: &mut Bencher) {
-//     let q = Scalar::new_modulus(18014398492704769u64);
-//     let context = Arc::new(RqPolyContext::new(2048, &q));
-//     let mut testpoly = cupcake::randutils::sample_uniform_poly(context.clone());
+fn scalar_ntt(bench: &mut Bencher) {
+    let q = Scalar::new_modulus(18014398492704769u64);
+    let context = Arc::new(RqPolyContext::new(2048, &q));
+    let mut testpoly = randutils::sample_uniform_poly(context);
 
-//     bench.iter(|| {
-//         testpoly.is_ntt_form = false;
-//         let _ = testpoly.forward_transform();
-//     })
-// }
+    bench.iter(|| {
+        testpoly.is_ntt_form = false;
+        let _ = testpoly.forward_transform();
+    })
+}
 
 // fn scalar_intt(bench: &mut Bencher) {
 //     let q = Scalar::new_modulus(18014398492704769u64);
@@ -182,7 +182,7 @@ fn decryption(bench: &mut Bencher) {
     }
     let ct = fv.encrypt_sk(&v, &sk);
     bench.iter(|| {
-        let _ = fv.decrypt(&ct, &sk);
+        let _: Vec<u8> = fv.decrypt(&ct, &sk);
     })
 }
 
@@ -258,7 +258,7 @@ fn rerandomize(bench: &mut Bencher) {
 //     sample_binary_prng
 // );
 benchmark_group!(
-    fvop,
+    scheme,
     encrypt_sk,
     encrypt_pk,
     encrypt_zero_pk,
@@ -267,4 +267,4 @@ benchmark_group!(
     rerandomize,
 );
 
-benchmark_main!(fvop);
+benchmark_main!(scheme);
