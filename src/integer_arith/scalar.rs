@@ -80,6 +80,12 @@ impl From<u64> for Scalar {
     }
 }
 
+impl From<Scalar> for u64{
+    fn from(item: Scalar) -> u64 {
+        item.rep
+    }
+}
+
 impl ArithUtils<Scalar> for Scalar {
     fn new_modulus(q: u64) -> Scalar {
         Scalar {
