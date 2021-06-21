@@ -2,11 +2,12 @@
 //
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
-use crate::integer_arith::ArithUtils;
+use crate::integer_arith::{ArithOperators, ArithUtils, SuperTrait};
 use modinverse::modinverse;
 use rand::rngs::StdRng;
 use rand::FromEntropy;
 use rand::RngCore;
+use ::std::ops;
 pub use std::sync::Arc;
 
 /// The ScalarContext class contains useful auxilliary information for fast modular reduction against a Scalar instance.
@@ -62,12 +63,16 @@ impl Scalar {
     }
 }
 
+/// Trait implementations
+impl SuperTrait<Scalar> for Scalar {}
+
 impl PartialEq for Scalar {
     fn eq(&self, other: &Self) -> bool {
         self.rep == other.rep
     }
 }
 
+// Conversions
 impl From<u32> for Scalar {
     fn from(item: u32) -> Self {
         Scalar {  context: None, rep: item as u64, bit_count: 0 }
@@ -86,6 +91,59 @@ impl From<Scalar> for u64{
     }
 }
 
+// Operators
+impl ops::Add<&Scalar> for Scalar {
+    type Output = Scalar;
+    fn add(self, v: &Scalar) -> Scalar {
+        Scalar::new(self.rep + v.rep)
+    }
+}
+
+impl ops::Add<Scalar> for Scalar {
+    type Output = Scalar;
+    fn add(self, v: Scalar) -> Scalar {
+        self + &v
+    }
+}
+
+impl ops::Sub<&Scalar> for Scalar {
+    type Output = Scalar;
+    fn sub(self, v: &Scalar) -> Scalar {
+         Scalar::new(self.rep - v.rep)
+    }
+}
+
+impl ops::Sub<Scalar> for Scalar {
+    type Output = Scalar;
+    fn sub(self, v: Scalar) -> Scalar {
+        self - &v
+    }
+}
+
+impl ops::Mul<u64> for Scalar {
+    type Output = Scalar;
+    fn mul(self, v: u64) -> Scalar {
+        Scalar::new(self.rep * v)
+    }
+}
+
+impl ArithOperators for Scalar{
+    fn add_u64(&mut self, a: u64){
+        self.rep += a;
+    }
+
+    fn sub_u64(&mut self, a: u64){
+        self.rep -= a;
+    }
+
+    fn rep(&self) -> u64{
+        self.rep
+    }
+}
+
+
+
+// Trait implementation
 impl ArithUtils<Scalar> for Scalar {
     fn new_modulus(q: u64) -> Scalar {
         Scalar {
@@ -432,5 +490,13 @@ mod tests {
         let c = Scalar::_barret_multiply(&a, &b, ratio, q);
 
         assert_eq!(c, 6);
+    }
+
+    #[test]
+    fn test_operator_add(){
+        let a = Scalar::new(123);
+        let b = Scalar::new(123);
+        let c = a + &b;
+        assert_eq!(u64::from(c), 246u64);
     }
 }

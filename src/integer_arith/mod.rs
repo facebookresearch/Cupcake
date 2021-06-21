@@ -4,6 +4,9 @@
 // LICENSE file in the root directory of this source tree.
 pub mod scalar;
 pub mod butterfly;
+mod util;
+
+// use ::std::ops;
 
 #[cfg(feature = "bigint")]
 pub mod bigint;
@@ -54,3 +57,13 @@ pub trait ArithUtils<T> {
     fn from_u64_raw(a: u64) -> T;
     fn to_u64(a: &T) -> u64;
 }
+
+trait ArithOperators{
+    fn add_u64(&mut self, a: u64);
+
+    fn sub_u64(&mut self, a: u64);
+
+    fn rep(&self) -> u64;
+}
+
+trait SuperTrait<T>: ArithOperators + ArithUtils<T> + Clone{}
