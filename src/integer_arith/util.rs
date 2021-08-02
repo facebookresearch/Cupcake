@@ -6,12 +6,18 @@ pub fn mul_high_word(a: u64, b:u64) -> u64{
 
 /// computes floor(w*pow(2,64)/q)
 pub fn compute_harvey_ratio(w: u64, q: u64) -> u64{
-  return ((w as u128) << 64 / q) as u64; 
+  return (((w as u128) << 64 )/ q as u128) as u64; 
+}
+
+pub fn mul_low_word(a: u64, b: u64) -> u64 {
+    let res = (a as u128) * (b as u128);
+    (res >> 64) as u64
 }
 
 #[cfg(test)]
 mod tests {
   use super::*;
+
 
   #[test]
   fn test_mul_high_word(){
@@ -23,6 +29,7 @@ mod tests {
 
   #[test]
   fn test_compute_harvey_ratio(){
-    assert_eq!(compute_harvey_ratio(0,1), 0);
+    assert_eq!(compute_harvey_ratio(0,100), 0);
+    assert_eq!(compute_harvey_ratio(1,100), 184467440737095516);
   }
 }
