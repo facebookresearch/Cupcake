@@ -66,4 +66,4 @@ trait ArithOperators{
     fn rep(&self) -> u64;
 }
 
-trait SuperTrait<T>: ArithOperators + ArithUtils<T> + Clone{}
+trait SuperTrait<T>: ArithOperators + ArithUtils<T> + Clone + From<u64>{}
