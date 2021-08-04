@@ -5,6 +5,7 @@
 use crate::integer_arith::ArithUtils;
 use crate::utils::reverse_bits_perm;
 use std::sync::Arc;
+use crate::traits::*; 
 
 /// Holds the context information for RqPolys, including degree n, modulus q, and optionally precomputed
 /// roots of unity for NTT purposes.
@@ -50,21 +51,6 @@ impl<T> PartialEq for RqPoly<T> where T: PartialEq {
         if self.is_ntt_form != other.is_ntt_form { return false; }
          true
     }
-}
-
-/// Number-theoretic transform (NTT) and fast polynomial multiplication based on NTT.
-pub trait NTT<T>: Clone {
-    fn is_ntt_form(&self) -> bool;
-
-    fn set_ntt_form(&mut self, value: bool);
-
-    fn forward_transform(&mut self);
-
-    fn inverse_transform(&mut self);
-
-    fn coeffwise_multiply(&self, other: &Self) -> Self;
-
-    fn multiply_fast(&self, other: &Self) -> Self;
 }
 
 /// Arithmetics on general ring elements.
@@ -251,6 +237,19 @@ where
         let mut c = a.coeffwise_multiply(&b);
         c.inverse_transform();
         c
+    }
+}
+
+impl<T> LazyNTT<T> for RqPoly<T>
+where
+    T: ArithUtils<T> + Clone{
+    
+    fn lazy_forward_transform(&mut self){
+        return 
+    }
+        
+    fn lazy_inverse_transform(&mut self) {
+        return
     }
 }
 
@@ -491,5 +490,36 @@ mod tests {
     fn test_find_root_scalar(){
         let context2 = RqPolyContext::new(4, &Scalar::new_modulus(12289));
         assert_eq!(context2.find_root().unwrap(), Scalar::from_u64_raw(8246u64));
+    }
+
+    #[test]
+    fn test_lazy_ntt(){
+        let q = Scalar::new_modulus(18014398492704769u64);
+        let context = RqPolyContext::new(4, &q);
+        let arc = Arc::new(context);
+        let mut a = randutils::sample_uniform_poly(arc.clone());
+        let mut aa = a.clone();
+
+        aa.forward_transform();
+        a.lazy_forward_transform(); 
+
+        // assert 
+        assert_eq!(aa.coeffs, a.coeffs); 
+    }
+
+
+    #[test]
+    fn test_lazy_inverse_ntt(){
+        let q = Scalar::new_modulus(18014398492704769u64);
+        let context = RqPolyContext::new(4, &q);
+        let arc = Arc::new(context);
+        let mut a = randutils::sample_uniform_poly(arc.clone());
+        let mut aa = a.clone();
+
+        aa.inverse_transform();
+        a.lazy_inverse_transform(); 
+
+        // assert 
+        assert_eq!(aa.coeffs, a.coeffs); 
     }
 }

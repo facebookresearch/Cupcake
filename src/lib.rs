@@ -199,7 +199,7 @@ pub type DefaultShemeType = FV<Scalar>;
 
 /// SecretKey type
 pub struct SecretKey<T>(RqPoly<T>);
-use rqpoly::{FiniteRingElt, RqPoly, RqPolyContext, NTT};
+use rqpoly::{FiniteRingElt, RqPoly, RqPolyContext};
 
 pub fn default() -> DefaultShemeType {
     FV::<Scalar>::default_2048()

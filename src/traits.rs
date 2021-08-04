@@ -61,3 +61,24 @@ pub trait Serializable{
     /// Deserialize from a vector of bytes.
     fn from_bytes(bytes: &Vec<u8>) -> Self;
 }
+
+/// Number-theoretic transform (NTT) and fast polynomial multiplication based on NTT.
+pub trait NTT<T>: Clone {
+    fn is_ntt_form(&self) -> bool;
+
+    fn set_ntt_form(&mut self, value: bool);
+
+    fn forward_transform(&mut self);
+
+    fn inverse_transform(&mut self);
+
+    fn coeffwise_multiply(&self, other: &Self) -> Self;
+
+    fn multiply_fast(&self, other: &Self) -> Self;
+}
+
+pub trait LazyNTT<T>: NTT<T>{
+    fn lazy_forward_transform(&mut self); 
+
+    fn lazy_inverse_transform(&mut self); 
+}
