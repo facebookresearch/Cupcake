@@ -3,6 +3,7 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 use crate::integer_arith::ArithUtils;
+use crate::integer_arith::butterfly::butterfly;
 use crate::utils::reverse_bits_perm;
 use std::sync::Arc;
 use crate::traits::*; 
@@ -164,9 +165,15 @@ where
                 let j2 = j1 + t - 1;
                 let phi = &context.roots[m + i];
                 for j in j1..j2 + 1 {
-                    let x = T::mul_mod(&self.coeffs[j + t], &phi, &q);
-                    self.coeffs[j + t] = T::sub_mod(&self.coeffs[j], &x, &q);
-                    self.coeffs[j] = T::add_mod(&self.coeffs[j], &x, &q);
+                    // butteffly: 
+                    let mut aj = self.coeffs[j].clone(); 
+                    let mut ajplust = self.coeffs[j+t].clone(); 
+                    butterfly(&mut aj, &mut ajplust, phi, &q);
+                    self.coeffs[j] = aj; 
+                    self.coeffs[j+t] = ajplust; 
+                    // let x = T::mul_mod(&self.coeffs[j + t], &phi, &q);
+                    // self.coeffs[j + t] = T::sub_mod(&self.coeffs[j], &x, &q);
+                    // self.coeffs[j] = T::add_mod(&self.coeffs[j], &x, &q);
                 }
             }
             m <<= 1;

@@ -14,7 +14,7 @@ fn inverse_butterfly<T>(X: &mut T, Y: &mut T, W: &T, q: &T) where T: ArithUtils<
 }
 
 // (X, Y) -> (X+WY, X-WY) mod q 
-fn butterfly<T>(X: &mut T, Y: &mut T, W: &T, q: &T) where T: ArithUtils<T>{
+pub(crate) fn butterfly<T>(X: &mut T, Y: &mut T, W: &T, q: &T) where T: ArithUtils<T>{
     let temp  = T::mul_mod(Y, W, q);
     *Y = T::sub_mod(X, &temp, q);
     *X = T::add_mod(X, &temp, q);
