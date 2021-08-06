@@ -7,7 +7,7 @@ use super::scalar::Scalar;
 use super::{SuperTrait, ArithUtils};
 
 // (X, Y) -> (X+Y, W(X-Y)) mod q 
-fn inverse_butterfly<T>(X: &mut T, Y: &mut T, W: &T, q: &T) where T: ArithUtils<T>{
+pub(crate) fn inverse_butterfly<T>(X: &mut T, Y: &mut T, W: &T, q: &T) where T: ArithUtils<T>{
     let temp  = T::sub_mod(X,Y, q);
     *X = T::add_mod(X, &Y, q);
     *Y = T::mul_mod(W, &temp, q);

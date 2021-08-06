@@ -30,9 +30,9 @@ name = "basic"
 [[example]]
 name = "serialization"
 
-# [[bench]]
-# name = "scheme"
-# harness = false
+[[bench]]
+name = "scheme"
+harness = false
 
 [[bench]]
 name = "polyops"
