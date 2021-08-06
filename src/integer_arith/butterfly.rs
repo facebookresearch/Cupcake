@@ -7,6 +7,7 @@ use super::scalar::Scalar;
 use super::{SuperTrait, ArithUtils};
 
 // (X, Y) -> (X+Y, W(X-Y)) mod q 
+#[allow(non_snake_case)]
 pub(crate) fn inverse_butterfly<T>(X: &mut T, Y: &mut T, W: &T, q: &T) where T: ArithUtils<T>{
     let temp  = T::sub_mod(X,Y, q);
     *X = T::add_mod(X, &Y, q);
@@ -14,6 +15,7 @@ pub(crate) fn inverse_butterfly<T>(X: &mut T, Y: &mut T, W: &T, q: &T) where T: 
 }
 
 // (X, Y) -> (X+WY, X-WY) mod q 
+#[allow(non_snake_case)]
 pub(crate) fn butterfly<T>(X: &mut T, Y: &mut T, W: &T, q: &T) where T: ArithUtils<T>{
     let temp  = T::mul_mod(Y, W, q);
     *Y = T::sub_mod(X, &temp, q);
@@ -22,7 +24,8 @@ pub(crate) fn butterfly<T>(X: &mut T, Y: &mut T, W: &T, q: &T) where T: ArithUti
 
 // (X, Y) -> (X+WY, X-WY)
 // 0 <= X, Y < 4q => (0 <= X', Y' < 4q)
-fn lazy_butterfly<T>(X: &mut T, Y: &mut T, W: u64, Wprime: u64, q: &T) where T: SuperTrait<T>{
+#[allow(non_snake_case)]
+pub(crate) fn lazy_butterfly<T>(X: &mut T, Y: &mut T, W: u64, Wprime: u64, q: &T) where T: SuperTrait<T>{
     let twoq = 2*q.rep();
 
     if X.rep() > twoq{
@@ -30,18 +33,17 @@ fn lazy_butterfly<T>(X: &mut T, Y: &mut T, W: u64, Wprime: u64, q: &T) where T: 
     }
     let xx = X.rep();
     let _qq = super::util::mul_high_word(Wprime, Y.rep());
-    let quo = W * Y.rep() - _qq * q.rep();
-    println!("quo = {}", quo);
+    let quo = W.wrapping_mul(Y.rep()) - _qq.wrapping_mul(q.rep());
     // X += quo;
     X.add_u64(quo);
     // Y += (2q - quo);
-    println!("Y = {}", Y.rep());
     *Y = T::from(xx + twoq - quo); 
 }
 
 // (X,Y) -> (X+Y, W(X-Y)) mod q
 // 0 <= X, Y < 2q  ==> 0 <= X', Y' < 2q 
-fn lazy_inverse_butterfly<T>(X: &mut T, Y: &mut T, W: u64, Wprime: u64, q: &T) where T: SuperTrait<T>{
+#[allow(non_snake_case)]
+pub(crate) fn lazy_inverse_butterfly<T>(X: &mut T, Y: &mut T, W: u64, Wprime: u64, q: &T) where T: SuperTrait<T>{
     let mut xx = X.rep() + Y.rep(); 
     	
     let twoq = 2*q.rep();
@@ -50,9 +52,7 @@ fn lazy_inverse_butterfly<T>(X: &mut T, Y: &mut T, W: u64, Wprime: u64, q: &T) w
     }
     let t = twoq - Y.rep() + X.rep(); 
     let quo = super::util::mul_high_word(Wprime, t); 
-    println!("quo = {}", quo);
-    println!("wprime = {}", Wprime);
-    let yy: u64 = super::util::mul_low_word(W,t) - super::util::mul_low_word(quo,q.rep()); 
+    let yy = W.wrapping_mul(t) - quo.wrapping_mul(q.rep()); 
     *X = T::from(xx); 
     *Y = T::from(yy);
 }

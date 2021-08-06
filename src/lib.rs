@@ -183,7 +183,7 @@ pub mod randutils;
 mod randutils;
 
 use integer_arith::scalar::Scalar;
-use integer_arith::ArithUtils;
+use integer_arith::{SuperTrait, ArithUtils};
 use traits::*;
 use std::sync::Arc;
 
@@ -307,7 +307,7 @@ where
 // constructor and random poly sampling
 impl<T> FV<T>
 where
-    T: ArithUtils<T> + Clone + PartialEq + Serializable + From<u32>,
+    T: SuperTrait<T>+ PartialEq + Serializable,
     RqPoly<T>: FiniteRingElt + NTT<T>,
 {
     pub fn new(n: usize, q: &T) -> Self {
@@ -330,7 +330,7 @@ where
             t: t.clone(),
             flooding_stdev: 2f64.powi(40),
             delta: T::div(q, &t), // &q/t,
-            qdivtwo: T::div(q, &T::from(2)), // &q/2,
+            qdivtwo: T::div(q, &T::from(2 as u32)), // &q/2,
             q: q.clone(),
             stdev: 3.2,
             context,

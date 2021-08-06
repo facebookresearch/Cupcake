@@ -4,7 +4,7 @@
 // LICENSE file in the root directory of this source tree.
 pub mod scalar;
 pub mod butterfly;
-mod util;
+pub(crate) mod util;
 
 // use ::std::ops;
 
@@ -58,7 +58,7 @@ pub trait ArithUtils<T> {
     fn to_u64(a: &T) -> u64;
 }
 
-trait ArithOperators{
+pub trait ArithOperators{
     fn add_u64(&mut self, a: u64);
 
     fn sub_u64(&mut self, a: u64);
@@ -66,4 +66,4 @@ trait ArithOperators{
     fn rep(&self) -> u64;
 }
 
-trait SuperTrait<T>: ArithOperators + ArithUtils<T> + Clone + From<u64>{}
+pub trait SuperTrait<T>: ArithOperators + ArithUtils<T> + Clone + From<u64> + From<u32> + PartialEq{}

@@ -2,8 +2,9 @@
 //
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
-use crate::integer_arith::ArithUtils;
-use crate::integer_arith::butterfly::{inverse_butterfly,butterfly};
+use crate::integer_arith::{SuperTrait, ArithUtils};
+use crate::integer_arith::butterfly::{inverse_butterfly,butterfly, lazy_butterfly, lazy_inverse_butterfly};
+use crate::integer_arith::util::compute_harvey_ratio; 
 use crate::utils::reverse_bits_perm;
 use std::sync::Arc;
 use crate::traits::*; 
@@ -17,6 +18,8 @@ pub struct RqPolyContext<T> {
     pub is_ntt_enabled: bool,
     pub roots: Vec<T>,
     pub invroots: Vec<T>,
+    pub scaled_roots: Vec<T>, // for use in lazy ntt
+    pub scaled_invroots: Vec<T>, // for use in lazy inverse ntt
 }
 
 /// Polynomials in Rq = Zq[x]/(x^n + 1).
@@ -67,7 +70,7 @@ pub trait FiniteRingElt {
 
 impl<T> RqPolyContext<T>
 where
-    T: ArithUtils<T> + PartialEq + Clone + From<u32>,
+    T: SuperTrait<T>,
 {
     pub fn new(n: usize, q: &T) -> Self {
         let mut a = RqPolyContext {
@@ -76,9 +79,27 @@ where
             is_ntt_enabled: false,
             invroots: vec![],
             roots: vec![],
+            scaled_roots: vec![], 
+            scaled_invroots: vec![], 
         };
         a.compute_roots();
+        a.compute_scaled_roots();
+
         a
+    }
+
+    fn compute_scaled_roots(&mut self){
+        if !self.is_ntt_enabled{
+            return; 
+        }
+        // compute scaled roots as wiprime = wi
+        for i in 0..self.n {
+            self.scaled_roots.push(T::from(compute_harvey_ratio(self.roots[i].rep(), self.q.rep()))); 
+        }
+
+        for i in 0..self.n {
+            self.scaled_invroots.push(T::from(compute_harvey_ratio(self.invroots[i].rep(), self.q.rep()))); 
+        }
     }
 
     fn compute_roots(&mut self) {
@@ -89,24 +110,24 @@ where
             self.is_ntt_enabled = false;
             return;
         }
-        self.is_ntt_enabled = true;
         let phi = root.unwrap();
-
+        
         let mut s = T::one();
         for _ in 0..self.n {
             roots.push(s.clone());
             s = T::mul_mod(&s, &phi, &self.q);
         }
         // now bit reverse a vector
-
+        
         reverse_bits_perm(&mut roots);
         self.roots = roots;
-
+        
         let mut invroots: Vec<T> = vec![];
         for x in self.roots.iter() {
             invroots.push(T::inv_mod(x, &self.q));
         }
         self.invroots = invroots;
+        self.is_ntt_enabled = true;
     }
 
     pub fn find_root(&self) -> Option<T> {
@@ -134,6 +155,81 @@ where
     }
 }
 
+impl<T> RqPoly<T>
+where
+    T: SuperTrait<T>
+{
+    fn lazy_ntt(&mut self){
+        let context = self.context.as_ref().unwrap();
+        if self.is_ntt_form {
+            panic!("is already in ntt");
+        }
+
+        let n = context.n;
+        let q = context.q.clone();
+
+        let mut t = n;
+        let mut m = 1;
+        while m < n {
+            t >>= 1;
+            for i in 0..m {
+                let j1 = 2 * i * t;
+                let j2 = j1 + t - 1;
+                let phi = &context.roots[m + i];
+                for j in j1..j2 + 1 {
+                    let (a, b) = self.coeffs.split_at_mut(j+1);
+                    lazy_butterfly(&mut a[j], &mut b[t-1], phi.rep(), context.scaled_roots[m+i].rep(), &q);
+                }
+            }
+            m <<= 1;
+        }
+        // reduction 
+        for ind in 0..n {
+            self.coeffs[ind] = T::modulus(&self.coeffs[ind], &q); 
+        }
+        self.set_ntt_form(true);
+    }
+
+    fn lazy_inverse_ntt(&mut self){
+        let context = self.context.as_ref().unwrap();
+        if !self.is_ntt_form {
+            panic!("is already not in ntt");
+        }
+        let n = context.n;
+        let q = context.q.clone();
+
+        let mut t = 1;
+        let mut m = n;
+        let ninv = T::inv_mod(&T::from_u32(n as u32, &q), &q);
+        while m > 1 {
+            let mut j1 = 0;
+            let h = m >> 1;
+            for i in 0..h {
+                let j2 = j1 + t - 1;
+                let s = &context.invroots[h + i];
+                for j in j1..j2 + 1 {
+                    // inverse butterfly
+                    let (a, b) = self.coeffs.split_at_mut(j+1);
+                    lazy_inverse_butterfly(&mut a[j], &mut b[t-1], s.rep(), context.scaled_invroots[h+i].rep(), &q);
+
+                    // let u = self.coeffs[j].clone();
+                    // let v = self.coeffs[j + t].clone();
+                    // self.coeffs[j] = T::add_mod(&u, &v, &q);
+
+                    // let tmp = T::sub_mod(&u, &v, &q);
+                    // self.coeffs[j + t] = T::mul_mod(&tmp, &s, &q);
+                }
+                j1 += 2 * t;
+            }
+            t <<= 1;
+            m >>= 1;
+        }
+        for x in 0..n {
+            self.coeffs[x] = T::mul_mod(&ninv, &self.coeffs[x], &q);
+        }
+        self.set_ntt_form(false);
+    }
+}
 // NTT implementation
 impl<T> NTT<T> for RqPoly<T>
 where
@@ -155,9 +251,6 @@ where
 
         let n = context.n;
         let q = context.q.clone();
-
-        // let mutable_coeffs = self.coeffs.as_mut_slice();
-
 
         let mut t = n;
         let mut m = 1;
@@ -514,7 +607,7 @@ mod tests {
         let mut aa = a.clone();
 
         aa.forward_transform();
-        a.lazy_forward_transform(); 
+        a.lazy_ntt(); 
 
         // assert 
         assert_eq!(aa.coeffs, a.coeffs); 
@@ -527,10 +620,10 @@ mod tests {
         let context = RqPolyContext::new(4, &q);
         let arc = Arc::new(context);
         let mut a = randutils::sample_uniform_poly(arc.clone());
+        a.set_ntt_form(true);
         let mut aa = a.clone();
-
         aa.inverse_transform();
-        a.lazy_inverse_transform(); 
+        a.lazy_inverse_ntt(); 
 
         // assert 
         assert_eq!(aa.coeffs, a.coeffs); 
