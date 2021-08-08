@@ -230,7 +230,61 @@ where
         self.set_ntt_form(false);
     }
 }
+
+// NTT implementation(lazy version)
+#[cfg(feature = "lazy_ntt")]
+impl<T> NTT<T> for RqPoly<T>
+where
+    T: SuperTrait<T>
+{
+    fn is_ntt_form(&self) -> bool {
+        self.is_ntt_form
+    }
+
+    fn set_ntt_form(&mut self, value: bool) {
+        self.is_ntt_form = value;
+    }
+
+    fn forward_transform(&mut self) {
+        self.lazy_ntt()
+    }
+
+    fn inverse_transform(&mut self) {
+        self.lazy_inverse_ntt()
+    }
+
+    fn coeffwise_multiply(&self, other: &Self) -> Self {
+        let context = self.context.as_ref().unwrap();
+        let mut c = self.clone();
+        for (inputs, cc) in self
+            .coeffs
+            .iter()
+            .zip(other.coeffs.iter())
+            .zip(c.coeffs.iter_mut())
+        {
+            *cc = T::mul_mod(inputs.0, inputs.1, &context.q);
+        }
+        c
+    }
+
+    fn multiply_fast(&self, other: &Self) -> Self {
+        let mut a: Self = self.clone();
+        let mut b = other.clone();
+
+        if !a.is_ntt_form {
+            a.forward_transform();
+        }
+        if !b.is_ntt_form {
+            b.forward_transform();
+        }
+        let mut c = a.coeffwise_multiply(&b);
+        c.inverse_transform();
+        c
+    }
+}
+
 // NTT implementation
+#[cfg(not(feature = "lazy_ntt"))]
 impl<T> NTT<T> for RqPoly<T>
 where
     T: ArithUtils<T> + Clone,
@@ -346,18 +400,6 @@ where
     }
 }
 
-impl<T> LazyNTT<T> for RqPoly<T>
-where
-    T: ArithUtils<T> + Clone{
-    
-    fn lazy_forward_transform(&mut self){
-        return 
-    }
-        
-    fn lazy_inverse_transform(&mut self) {
-        return
-    }
-}
 
 impl<T> FiniteRingElt for RqPoly<T>
 where

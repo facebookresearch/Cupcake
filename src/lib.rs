@@ -284,7 +284,7 @@ where
 impl<T> AdditiveHomomorphicScheme<FVCiphertext<T>, SecretKey<T>> for FV<T>
 where
     RqPoly<T>: FiniteRingElt,
-    T: Clone + ArithUtils<T> + PartialEq +  From<u32>,
+    T: SuperTrait<T>,
 {
     fn add_inplace(&self, ct1: &mut FVCiphertext<T>, ct2: &FVCiphertext<T>) {
         ct1.0.add_inplace(&ct2.0);
@@ -394,7 +394,7 @@ impl FV<BigInt> {
 impl<T> KeyGeneration<FVCiphertext<T>,  SecretKey<T>> for FV<T>
 where
     RqPoly<T>: FiniteRingElt,
-    T: Clone + ArithUtils<T> + PartialEq  + From<u32>,
+    T: SuperTrait<T>,
 {
     fn generate_key(&self) -> SecretKey<T> {
         let mut skpoly = rqpoly::randutils::sample_ternary_poly(self.context.clone());
@@ -418,7 +418,7 @@ where
 impl<T> EncryptionOfZeros<FVCiphertext<T>,  SecretKey<T>> for FV<T>
 where
     RqPoly<T>: FiniteRingElt,
-    T: Clone + ArithUtils<T> + PartialEq  + From<u32>,
+    T: SuperTrait<T>,
 {
     fn encrypt_zero(&self, pk: &FVCiphertext<T>) -> FVCiphertext<T> {
         let mut u = rqpoly::randutils::sample_ternary_poly_prng(self.context.clone());
@@ -451,7 +451,7 @@ where
 impl<T> PKEncryption<FVCiphertext<T>, FVPlaintext<T>, SecretKey<T>> for FV<T>
 where
     RqPoly<T>: FiniteRingElt,
-    T: Clone + ArithUtils<T> + PartialEq  + From<u32>,
+    T: SuperTrait<T>,
 {
     fn encrypt(&self, pt: &FVPlaintext<T>, pk: &FVCiphertext<T>) -> FVCiphertext<T> {
         // use public key to encrypt
@@ -470,7 +470,7 @@ where
 impl<T> PKEncryption<FVCiphertext<T>, DefaultFVPlaintext, SecretKey<T>> for FV<T>
 where
     RqPoly<T>: FiniteRingElt,
-    T: Clone + ArithUtils<T> + PartialEq + From<u32>,
+    T: SuperTrait<T>,
 {
     fn encrypt(&self, pt: &DefaultFVPlaintext, pk: &FVCiphertext<T>) -> FVCiphertext<T> {
         let pt1 = self.convert_pt_u8_to_scalar(pt);
@@ -481,7 +481,7 @@ where
 impl<T> SKEncryption<FVCiphertext<T>, DefaultFVPlaintext, SecretKey<T>> for FV<T>
 where
     RqPoly<T>: FiniteRingElt,
-    T: Clone + ArithUtils<T> + PartialEq + From<u32>,
+    T: SuperTrait<T>,
 {
     fn encrypt_sk(&self, pt: &DefaultFVPlaintext, sk: &SecretKey<T>) -> FVCiphertext<T>
         {
@@ -499,7 +499,7 @@ where
 impl<T> SKEncryption<FVCiphertext<T>, FVPlaintext<T>, SecretKey<T>> for FV<T>
 where
     RqPoly<T>: FiniteRingElt,
-    T: Clone + ArithUtils<T> + PartialEq + From<u32>,
+    T: SuperTrait<T>,
 {
     fn encrypt_sk(&self, pt: &FVPlaintext<T>, sk: &SecretKey<T>) -> FVCiphertext<T> {
         let e = rqpoly::randutils::sample_gaussian_poly(self.context.clone(), self.stdev);

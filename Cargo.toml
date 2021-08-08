@@ -12,6 +12,7 @@ description = "An implementation of a lattice-based additive homomorphic encrypt
 [dependencies]
 rand = "0.5.5"
 modinverse = "0.1.1"
+cfg-if = "1.0"
 
 [dev-dependencies]
 bencher = "0.1.5"
@@ -22,6 +23,8 @@ path = "src/lib.rs"
 
 [features]
 bench = []
+lazy_ntt = []
+default = []
 
 
 [[example]]
