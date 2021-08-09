@@ -168,6 +168,8 @@ where
         let n = context.n;
         let q = context.q.clone();
 
+        let twoq = q.rep() << 1; 
+
         let mut t = n;
         let mut m = 1;
         while m < n {
@@ -178,7 +180,7 @@ where
                 let phi = &context.roots[m + i];
                 for j in j1..j2 + 1 {
                     let (a, b) = self.coeffs.split_at_mut(j+1);
-                    lazy_butterfly(&mut a[j], &mut b[t-1], phi.rep(), context.scaled_roots[m+i].rep(), &q);
+                    lazy_butterfly(&mut a[j], &mut b[t-1], phi.rep(), context.scaled_roots[m+i].rep(), &q, twoq);
                 }
             }
             m <<= 1;

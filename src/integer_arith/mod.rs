@@ -4,7 +4,7 @@
 // LICENSE file in the root directory of this source tree.
 pub mod scalar;
 pub mod butterfly;
-pub(crate) mod util;
+pub mod util;
 
 // use ::std::ops;
 

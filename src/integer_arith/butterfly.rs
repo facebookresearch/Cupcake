@@ -3,12 +3,12 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-use super::scalar::Scalar;
 use super::{SuperTrait, ArithUtils};
+use super::scalar::Scalar;
 
 // (X, Y) -> (X+Y, W(X-Y)) mod q 
 #[allow(non_snake_case)]
-pub(crate) fn inverse_butterfly<T>(X: &mut T, Y: &mut T, W: &T, q: &T) where T: ArithUtils<T>{
+pub fn inverse_butterfly<T>(X: &mut T, Y: &mut T, W: &T, q: &T) where T: ArithUtils<T>{
     let temp  = T::sub_mod(X,Y, q);
     *X = T::add_mod(X, &Y, q);
     *Y = T::mul_mod(W, &temp, q);
@@ -16,7 +16,7 @@ pub(crate) fn inverse_butterfly<T>(X: &mut T, Y: &mut T, W: &T, q: &T) where T: 
 
 // (X, Y) -> (X+WY, X-WY) mod q 
 #[allow(non_snake_case)]
-pub(crate) fn butterfly<T>(X: &mut T, Y: &mut T, W: &T, q: &T) where T: ArithUtils<T>{
+pub fn butterfly<T>(X: &mut T, Y: &mut T, W: &T, q: &T) where T: ArithUtils<T>{
     let temp  = T::mul_mod(Y, W, q);
     *Y = T::sub_mod(X, &temp, q);
     *X = T::add_mod(X, &temp, q);
@@ -25,19 +25,27 @@ pub(crate) fn butterfly<T>(X: &mut T, Y: &mut T, W: &T, q: &T) where T: ArithUti
 // (X, Y) -> (X+WY, X-WY)
 // 0 <= X, Y < 4q => (0 <= X', Y' < 4q)
 #[allow(non_snake_case)]
-pub(crate) fn lazy_butterfly<T>(X: &mut T, Y: &mut T, W: u64, Wprime: u64, q: &T) where T: SuperTrait<T>{
-    let twoq = 2*q.rep();
-
+pub fn lazy_butterfly<T>(X: &mut T, Y: &mut T, W: u64, Wprime: u64, q: &T, twoq: u64) where T: SuperTrait<T>{
+    // let twoq = 0; 
     if X.rep() > twoq{
-    X.sub_u64(twoq);
+        X.sub_u64(twoq);
     }
-    let xx = X.rep();
     let _qq = super::util::mul_high_word(Wprime, Y.rep());
     let quo = W.wrapping_mul(Y.rep()) - _qq.wrapping_mul(q.rep());
     // X += quo;
-    X.add_u64(quo);
+    X.add_u64(quo); 
     // Y += (2q - quo);
-    *Y = T::from(xx + twoq - quo); 
+    *Y = T::from(X.rep() + twoq - quo); 
+}
+
+pub fn lazy_butterfly_u64(mut x: u64, y:u64, W: u64, wprime: u64, q: u64, twoq: u64) -> (u64, u64){
+    // let twoq = 0; 
+    if x > twoq{
+        x -= twoq; 
+    }
+    let _qq = super::util::mul_high_word(wprime, y);
+    let quo = W.wrapping_mul(y) - _qq.wrapping_mul(q);
+    (x + quo, x + twoq - quo)
 }
 
 // (X,Y) -> (X+Y, W(X-Y)) mod q
@@ -60,7 +68,6 @@ pub(crate) fn lazy_inverse_butterfly<T>(X: &mut T, Y: &mut T, W: u64, Wprime: u6
 #[cfg(test)]
 mod tests {
     use super::*;
-
 
     fn butterfly_for_test(arr: [u64;4]) -> [u64; 2] {
       let mut X:Scalar = Scalar::from(arr[0]);

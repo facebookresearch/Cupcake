@@ -41,3 +41,7 @@ harness = false
 name = "polyops"
 harness = false
 required-features = ["bench"]
+
+[[bench]]
+name = "butterfly"
+harness = false
