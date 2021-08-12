@@ -37,8 +37,8 @@ where
     let mut vec: Vec<u8> = Vec::new();
     // push in the is ntt form.
     vec.push(self.is_ntt_form as u8);
-    for i in 0..self.coeffs.len() {
-      let mut bytes = self.coeffs[i].to_bytes();
+    for coeff in &self.coeffs {
+      let mut bytes = coeff.to_bytes();
       vec.append(&mut bytes);
     }
     vec

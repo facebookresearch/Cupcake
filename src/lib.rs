@@ -170,6 +170,7 @@
 
 
 pub mod integer_arith;
+pub mod polyarith;
 #[cfg(feature = "bench")]
 pub mod rqpoly;
 #[cfg(not(feature = "bench"))]

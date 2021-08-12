@@ -4,7 +4,6 @@
 // LICENSE file in the root directory of this source tree.
 
 use super::{SuperTrait, ArithUtils};
-use super::scalar::Scalar;
 
 // (X, Y) -> (X+Y, W(X-Y)) mod q 
 #[allow(non_snake_case)]
@@ -27,15 +26,16 @@ pub fn butterfly<T>(X: &mut T, Y: &mut T, W: &T, q: &T) where T: ArithUtils<T>{
 #[allow(non_snake_case)]
 pub fn lazy_butterfly<T>(X: &mut T, Y: &mut T, W: u64, Wprime: u64, q: &T, twoq: u64) where T: SuperTrait<T>{
     // let twoq = 0; 
-    if X.rep() > twoq{
-        X.sub_u64(twoq);
+    let mut xx = X.rep(); 
+    if xx > twoq{
+        xx -= twoq; 
     }
     let _qq = super::util::mul_high_word(Wprime, Y.rep());
     let quo = W.wrapping_mul(Y.rep()) - _qq.wrapping_mul(q.rep());
     // X += quo;
-    X.add_u64(quo); 
-    // Y += (2q - quo);
-    *Y = T::from(X.rep() + twoq - quo); 
+    *X = T::from(xx + quo); 
+    // Y = (x + 2q - quo);
+    *Y = T::from(xx + twoq - quo); 
 }
 
 pub fn lazy_butterfly_u64(mut x: u64, y:u64, W: u64, wprime: u64, q: u64, twoq: u64) -> (u64, u64){
@@ -46,6 +46,18 @@ pub fn lazy_butterfly_u64(mut x: u64, y:u64, W: u64, wprime: u64, q: u64, twoq: 
     let _qq = super::util::mul_high_word(wprime, y);
     let quo = W.wrapping_mul(y) - _qq.wrapping_mul(q);
     (x + quo, x + twoq - quo)
+}
+
+pub fn lazy_inverse_butterfly_u64(x: u64, y:u64, W: u64, wprime: u64, q: u64, twoq: u64) -> (u64, u64){
+    let mut xx = x+y;
+    	
+    if xx > twoq {
+        xx -= twoq; 
+    }
+    let t = twoq - y + x; 
+    let quo = super::util::mul_high_word(wprime, t); 
+    let yy = W.wrapping_mul(t) - quo.wrapping_mul(q); 
+    (xx, yy)
 }
 
 // (X,Y) -> (X+Y, W(X-Y)) mod q
@@ -68,6 +80,7 @@ pub(crate) fn lazy_inverse_butterfly<T>(X: &mut T, Y: &mut T, W: u64, Wprime: u6
 #[cfg(test)]
 mod tests {
     use super::*;
+    use super::super::scalar::Scalar;
 
     fn butterfly_for_test(arr: [u64;4]) -> [u64; 2] {
       let mut X:Scalar = Scalar::from(arr[0]);
@@ -97,8 +110,9 @@ mod tests {
       let q:Scalar = Scalar::new_modulus(arr[3]);
       //  W′ = ⌊W β/p⌋, 0 < W′ < β
       let Wprime: u64 = super::super::util::compute_harvey_ratio(W, q.rep());
+      let twoq = q.rep() << 1; 
 
-      lazy_butterfly(&mut X, &mut Y, W, Wprime, &q);
+      lazy_butterfly(&mut X, &mut Y, W, Wprime, &q, twoq);
       [X.into(), Y.into()]
     }
 

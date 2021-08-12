@@ -4,6 +4,7 @@
 // LICENSE file in the root directory of this source tree.
 use crate::integer_arith::{SuperTrait, ArithUtils};
 use crate::integer_arith::butterfly::{inverse_butterfly,butterfly, lazy_butterfly, lazy_inverse_butterfly};
+use crate::polyarith::lazy_ntt::{lazy_ntt_u64, lazy_inverse_ntt_u64};
 use crate::integer_arith::util::compute_harvey_ratio; 
 use crate::utils::reverse_bits_perm;
 use std::sync::Arc;
@@ -159,39 +160,35 @@ impl<T> RqPoly<T>
 where
     T: SuperTrait<T>
 {
-    fn lazy_ntt(&mut self){
+    fn lazy_ntt(&mut self)
+    {
         let context = self.context.as_ref().unwrap();
         if self.is_ntt_form {
             panic!("is already in ntt");
         }
+        let q = context.q.rep();
 
-        let n = context.n;
-        let q = context.q.clone();
+        let mut coeffs_u64: Vec<u64> = self.coeffs.iter()
+        .map(|elm| elm.rep())
+        .collect();
 
-        let twoq = q.rep() << 1; 
+        let roots_u64: Vec<u64> = context.roots.iter()
+        .map(|elm| elm.rep())
+        .collect();
+        let scaledroots_u64: Vec<u64> = context.scaled_roots.iter()
+        .map(|elm| elm.rep())
+        .collect();
 
-        let mut t = n;
-        let mut m = 1;
-        while m < n {
-            t >>= 1;
-            for i in 0..m {
-                let j1 = 2 * i * t;
-                let j2 = j1 + t - 1;
-                let phi = &context.roots[m + i];
-                for j in j1..j2 + 1 {
-                    let (a, b) = self.coeffs.split_at_mut(j+1);
-                    lazy_butterfly(&mut a[j], &mut b[t-1], phi.rep(), context.scaled_roots[m+i].rep(), &q, twoq);
-                }
-            }
-            m <<= 1;
-        }
-        // reduction 
-        for ind in 0..n {
-            self.coeffs[ind] = T::modulus(&self.coeffs[ind], &q); 
+        lazy_ntt_u64(&mut coeffs_u64, &roots_u64, &scaledroots_u64, q); 
+
+        for (coeff, coeff_u64) in self.coeffs.iter_mut().zip(coeffs_u64.iter()){
+            *coeff = T::modulus(&T::from(*coeff_u64), &context.q); 
         }
         self.set_ntt_form(true);
     }
 
+
+    // TODO update
     fn lazy_inverse_ntt(&mut self){
         let context = self.context.as_ref().unwrap();
         if !self.is_ntt_form {
@@ -199,35 +196,24 @@ where
         }
         let n = context.n;
         let q = context.q.clone();
-
-        let mut t = 1;
-        let mut m = n;
         let ninv = T::inv_mod(&T::from_u32(n as u32, &q), &q);
-        while m > 1 {
-            let mut j1 = 0;
-            let h = m >> 1;
-            for i in 0..h {
-                let j2 = j1 + t - 1;
-                let s = &context.invroots[h + i];
-                for j in j1..j2 + 1 {
-                    // inverse butterfly
-                    let (a, b) = self.coeffs.split_at_mut(j+1);
-                    lazy_inverse_butterfly(&mut a[j], &mut b[t-1], s.rep(), context.scaled_invroots[h+i].rep(), &q);
 
-                    // let u = self.coeffs[j].clone();
-                    // let v = self.coeffs[j + t].clone();
-                    // self.coeffs[j] = T::add_mod(&u, &v, &q);
+        let mut coeffs_u64: Vec<u64> = self.coeffs.iter()
+        .map(|elm| elm.rep())
+        .collect();
 
-                    // let tmp = T::sub_mod(&u, &v, &q);
-                    // self.coeffs[j + t] = T::mul_mod(&tmp, &s, &q);
-                }
-                j1 += 2 * t;
-            }
-            t <<= 1;
-            m >>= 1;
-        }
-        for x in 0..n {
-            self.coeffs[x] = T::mul_mod(&ninv, &self.coeffs[x], &q);
+        let invroots_u64: Vec<u64> = context.invroots.iter()
+        .map(|elm| elm.rep())
+        .collect();
+
+        let scaled_invroots_u64: Vec<u64> = context.scaled_invroots.iter()
+        .map(|elm| elm.rep())
+        .collect();
+
+        lazy_inverse_ntt_u64(&mut coeffs_u64, &invroots_u64, &scaled_invroots_u64, q.rep()); 
+
+        for (coeff, coeff_u64) in self.coeffs.iter_mut().zip(coeffs_u64.iter()){
+            *coeff = T::mul_mod(&ninv, &T::from(*coeff_u64), &context.q); 
         }
         self.set_ntt_form(false);
     }
