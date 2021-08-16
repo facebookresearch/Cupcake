@@ -7,19 +7,19 @@ use super::*;
 
 use crate::rqpoly::RqPolyContext;
 
-fn sample_ternary_poly<T>(context: Arc<RqPolyContext<T>>) -> RqPoly<T>
+pub fn sample_ternary_poly<T>(context: Arc<RqPolyContext<T>>) -> RqPoly<T>
 where
-    T: ArithUtils<T> + From<u32>,
+    T: SuperTrait<T>,
 {
     let mut rng = OsRng::new().unwrap();
     let mut c = vec![];
+    let q = context.q.rep() as i64; 
     for _x in 0..context.n {
-        let t = rng.gen_range(-1i32, 2i32);
-        if t >= 0 {
-            c.push(T::from(t as u32));
-        } else {
-            c.push(T::sub(&context.q, &T::one()));
+        let mut t = rng.gen_range(-1i32, 2i32) as i64;
+        if t < 0{
+            t += q; 
         }
+        c.push(T::from(t as u64));
     }
     RqPoly {
         coeffs: c,
@@ -28,18 +28,20 @@ where
     }
 }
 
-fn sample_ternary_poly_prng<T>(context: Arc<RqPolyContext<T>>) -> RqPoly<T>
+pub fn sample_ternary_poly_prng<T>(context: Arc<RqPolyContext<T>>) -> RqPoly<T>
 where
-    T: ArithUtils<T> + From<u32>,
+    T: SuperTrait<T>,
 {
     let mut rng = StdRng::from_entropy();
     let mut c = vec![];
+    let q = context.q.rep(); 
+    let qminus = q-1; 
     for _x in 0..context.n {
-        let t = rng.gen_range(-1i32, 2i32);
-        if t >= 0 {
-            c.push(T::from(t as u32));
-        } else {
-            c.push(T::sub(&context.q, &T::one()));
+        let t = rng.gen_range(-1i32, 2i32); 
+        if t < 0{
+            c.push(T::from(qminus));
+        } else{
+            c.push(T::from(t as u64));
         }
     }
     RqPoly {
@@ -60,10 +62,10 @@ where
     let q: f64 = context.q.rep() as f64; 
     for _ in 0..context.n {
         let mut tmp = normal.sample(&mut rng);
+        // branch on sign
         if tmp < 0.0 {
             tmp += q; 
         } 
-        // branch on sign
         c.push(T::from(tmp as u64));
     }
     RqPoly {

@@ -422,14 +422,13 @@ where
     T: SuperTrait<T>,
 {
     fn encrypt_zero(&self, pk: &FVCiphertext<T>) -> FVCiphertext<T> {
-        // let mut u = rqpoly::randutils::sample_ternary_poly_prng(self.context.clone());
-        // let e1 = rqpoly::randutils::sample_gaussian_poly(self.context.clone(), self.stdev);
-        // let e2 = rqpoly::randutils::sample_gaussian_poly(self.context.clone(), self.stdev);
+        let mut u = randutils::sample_ternary_poly_prng(self.context.clone());
+        let e1 = randutils::sample_gaussian_poly(self.context.clone(), self.stdev);
+        let e2 = randutils::sample_gaussian_poly(self.context.clone(), self.stdev);
 
-        // let mut u = rqpoly::randutils::sample_ternary_poly_prng(self.context.clone());
-        let mut u  = RqPoly::new(self.context.clone()); 
-        let e1 = RqPoly::new(self.context.clone()); 
-        let e2 = RqPoly::new(self.context.clone()); 
+        // let mut u  = RqPoly::new(self.context.clone()); 
+        // let e1 = RqPoly::new(self.context.clone()); 
+        // let e2 = RqPoly::new(self.context.clone()); 
 
         if self.context.is_ntt_enabled {
             u.forward_transform();
@@ -437,13 +436,13 @@ where
         // c0 = au + e1
         // let mut c0 = RqPoly::new(self.context.clone()); 
         let mut c0 = (self.poly_multiplier)(&pk.0, &u);
-        // c0.add_inplace(&e1);
+        c0.add_inplace(&e1);
 
         // c1 = bu + e2
         // let mut c1 = RqPoly::new(self.context.clone()); 
 
         let mut c1 = (self.poly_multiplier)(&pk.1, &u);
-        // c1.add_inplace(&e2);
+        c1.add_inplace(&e2);
 
         (c0, c1)
     }
