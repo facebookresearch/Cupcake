@@ -45,3 +45,7 @@ required-features = ["bench"]
 [[bench]]
 name = "butterfly"
 harness = false
+
+[[bench]]
+name = "integerops"
+harness = false

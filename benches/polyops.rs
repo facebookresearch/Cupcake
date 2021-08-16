@@ -8,10 +8,10 @@ pub use std::sync::Arc;
 use bencher::Bencher;
 use cupcake::traits::*;
 use cupcake::rqpoly::{RqPolyContext};
-use cupcake::randutils;
+// use cupcake::randutils;
 use cupcake::integer_arith::scalar::Scalar;
 use cupcake::integer_arith::ArithUtils;
-
+use cupcake::randutils;
 
 fn scalar_ntt(bench: &mut Bencher) {
     let q = Scalar::new_modulus(18014398492704769u64);
@@ -64,52 +64,14 @@ fn scalar_intt(bench: &mut Bencher) {
 //     })
 // }
 
-// fn ntt_multiply(bench: &mut Bencher) {
-//     let fv = FV::<BigInt>::default_2048();
-//     // let context = RqPolyContext::new(fv.n, &fv.q);
-//     // fv.context = Arc::new(context);
-//     let a = fv.sample_uniform_poly();
-//     let b = fv.sample_uniform_poly();
-//     bench.iter(|| {
-//         let _ = a.multiply_fast(&b);
-//     })
-// }
+fn sample_gaussian(bench: &mut Bencher) {
+    let q = Scalar::new_modulus(18014398492704769u64);
+    let context = Arc::new(RqPolyContext::new(2048, &q));
 
-// fn bigint_ntt(bench: &mut Bencher) {
-//     let fv = FV::<BigInt>::default_2048();
-//     // let context = RqPolyContext::new(fv.n, &fv.q);
-//     // fv.context = Arc::new(context);
-//     let mut a = fv.sample_uniform_poly();
-//     bench.iter(|| {
-//         a.is_ntt_form = false;
-//         let _ = a.forward_transform();
-//     })
-// }
-
-// fn bigint_intt(bench: &mut Bencher) {
-//     let fv = FV::<BigInt>::default_2048();
-//     let mut a = fv.sample_uniform_poly();
-//     bench.iter(|| {
-//         a.is_ntt_form = true;
-//         let _ = a.inverse_transform();
-//     })
-// }
-
-// fn sample_uniform(bench: &mut Bencher) {
-//     let fv = FV::<Scalar>::default_2048();
-
-//     bench.iter(|| {
-//         let _ = randutils::sample_uniform_poly(fv.context.clone());
-//     })
-// }
-
-// fn sample_gaussian(bench: &mut Bencher) {
-//     let fv = FV::<Scalar>::default_2048();
-
-//     bench.iter(|| {
-//         let _ = fv.sample_gaussian_poly(fv.stdev);
-//     })
-// }
+    bench.iter(|| {
+        let _ = randutils::sample_gaussian_poly(context.clone(), 3.14);
+    })
+}
 
 // fn sample_uniform_scalar(bench: &mut Bencher) {
 //     let fv = FV::<Scalar>::default_2048();
@@ -155,11 +117,10 @@ fn scalar_intt(bench: &mut Bencher) {
 benchmark_group!(
     polyops,
     // sample_uniform,
-    // sample_gaussian,
+    sample_gaussian,
     // sample_binary,
     scalar_ntt,
     scalar_intt,
-    // sample_binary_prng
 );
 
 

@@ -50,23 +50,21 @@ where
 }
 
 /// Sample a polynomial with Gaussian coefficients in the ring Rq.
-fn sample_gaussian_poly<T>(context: Arc<RqPolyContext<T>>, stdev: f64) -> RqPoly<T>
+pub fn sample_gaussian_poly<T>(context: Arc<RqPolyContext<T>>, stdev: f64) -> RqPoly<T>
 where
-    T: ArithUtils<T>,
+    T: SuperTrait<T>,
 {
     let mut c = vec![];
     let normal = Normal::new(0.0, stdev);
     let mut rng = thread_rng();
+    let q: f64 = context.q.rep() as f64; 
     for _ in 0..context.n {
-        let tmp = normal.sample(&mut rng);
-
+        let mut tmp = normal.sample(&mut rng);
+        if tmp < 0.0 {
+            tmp += q; 
+        } 
         // branch on sign
-        if tmp >= 0.0 {
-            c.push(T::from_u64_raw(tmp as u64));
-        } else {
-            let neg = T::from_u64_raw(-tmp as u64);
-            c.push(T::sub(&context.q, &neg));
-        }
+        c.push(T::from(tmp as u64));
     }
     RqPoly {
         coeffs: c,

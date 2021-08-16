@@ -51,7 +51,7 @@ where
       coeffs.push(T::from_bytes(&bytes[i..i+8].to_vec()));
       i += 8;
     }
-    RqPoly::new(&coeffs, is_ntt_form)
+    RqPoly::new_without_context(&coeffs, is_ntt_form)
   }
 }
 
@@ -89,7 +89,7 @@ mod tests {
     for i in 0..4 {
       coeffs.push(Scalar::from_u64_raw(i));
     }
-    let testpoly = RqPoly::<Scalar>::new(&coeffs, false);
+    let testpoly = RqPoly::<Scalar>::new_without_context(&coeffs, false);
     let bytes = testpoly.to_bytes();
     let deserialized = RqPoly::<Scalar>::from_bytes(&bytes);
     assert_eq!(testpoly, deserialized);

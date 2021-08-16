@@ -73,12 +73,8 @@ pub trait NTT<T>: Clone {
     fn inverse_transform(&mut self);
 
     fn coeffwise_multiply(&self, other: &Self) -> Self;
-
-    fn multiply_fast(&self, other: &Self) -> Self;
 }
 
-pub trait LazyNTT<T>: NTT<T>{
-    fn lazy_forward_transform(&mut self); 
-
-    fn lazy_inverse_transform(&mut self); 
+pub trait FastPolyMultiply<T>: NTT<T> {
+    fn multiply_fast(&self, other: &Self) -> Self;
 }

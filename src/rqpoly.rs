@@ -32,11 +32,22 @@ pub struct RqPoly<T> {
 }
 
 impl<T> RqPoly<T> where T:Clone{
-    pub fn new(coeffs: &Vec<T>, is_ntt_form:bool) -> Self{
+    pub fn new_without_context(coeffs: &Vec<T>, is_ntt_form:bool) -> Self{
         RqPoly{
             context: None,
             coeffs: coeffs.to_vec(),
             is_ntt_form,
+        }
+    }
+}
+
+impl<T> RqPoly<T> where T:Clone + ArithUtils<T>{
+    pub fn new(context: Arc<RqPolyContext<T>>) -> Self{
+        let n = context.n; 
+        RqPoly{
+            context: Some(context), 
+            coeffs: vec![T::zero(); n], 
+            is_ntt_form: false
         }
     }
 
@@ -187,8 +198,6 @@ where
         self.set_ntt_form(true);
     }
 
-
-    // TODO update
     fn lazy_inverse_ntt(&mut self){
         let context = self.context.as_ref().unwrap();
         if !self.is_ntt_form {
@@ -243,6 +252,7 @@ where
 
     fn coeffwise_multiply(&self, other: &Self) -> Self {
         let context = self.context.as_ref().unwrap();
+        let q = context.q.clone();
         let mut c = self.clone();
         for (inputs, cc) in self
             .coeffs
@@ -250,23 +260,8 @@ where
             .zip(other.coeffs.iter())
             .zip(c.coeffs.iter_mut())
         {
-            *cc = T::mul_mod(inputs.0, inputs.1, &context.q);
+            *cc = T::mul_mod(inputs.0, inputs.1, &q);
         }
-        c
-    }
-
-    fn multiply_fast(&self, other: &Self) -> Self {
-        let mut a: Self = self.clone();
-        let mut b = other.clone();
-
-        if !a.is_ntt_form {
-            a.forward_transform();
-        }
-        if !b.is_ntt_form {
-            b.forward_transform();
-        }
-        let mut c = a.coeffwise_multiply(&b);
-        c.inverse_transform();
         c
     }
 }
@@ -371,7 +366,10 @@ where
         }
         c
     }
+}
 
+impl<T> FastPolyMultiply<T> for RqPoly<T>
+where T: SuperTrait<T>{
     fn multiply_fast(&self, other: &Self) -> Self {
         let mut a: Self = self.clone();
         let mut b = other.clone();
@@ -446,7 +444,7 @@ where
 }
 
 /// Utility functions for generating random polynomials.
-pub(crate) mod randutils {
+pub mod randutils {
     use rand::distributions::{Distribution, Normal};
     use rand::rngs::{OsRng, StdRng};
     use rand::FromEntropy;
@@ -496,22 +494,22 @@ pub(crate) mod randutils {
     }
 
     /// Sample a polynomial with Gaussian coefficients in the ring Rq.
-    pub(crate) fn sample_gaussian_poly<T>(context: Arc<RqPolyContext<T>>, stdev: f64) -> RqPoly<T>
+    pub fn sample_gaussian_poly<T>(context: Arc<RqPolyContext<T>>, stdev: f64) -> RqPoly<T>
     where
-        T: ArithUtils<T>,
+        T: SuperTrait<T>,
     {
         let mut c = vec![];
         let normal = Normal::new(0.0, stdev);
         let mut rng = thread_rng();
+        let q = context.q.rep() as f64; 
         for _ in 0..context.n {
             let tmp = normal.sample(&mut rng);
 
             // branch on sign
             if tmp >= 0.0 {
-                c.push(T::from_u64_raw(tmp as u64));
+                c.push(T::from(tmp as u64));
             } else {
-                let neg = T::from_u64_raw(-tmp as u64);
-                c.push(T::sub(&context.q, &neg));
+                c.push(T::from((q + tmp) as u64));
             }
         }
         RqPoly {
