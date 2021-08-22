@@ -443,100 +443,6 @@ where
     }
 }
 
-/// Utility functions for generating random polynomials.
-pub mod randutils {
-    use rand::distributions::{Distribution, Normal};
-    use rand::rngs::{OsRng, StdRng};
-    use rand::FromEntropy;
-    use rand::{thread_rng, Rng};
-    use super::*;
-
-    pub(crate) fn sample_ternary_poly<T>(context: Arc<RqPolyContext<T>>) -> RqPoly<T>
-    where
-        T: ArithUtils<T> + From<u32>,
-    {
-        let mut rng = OsRng::new().unwrap();
-        let mut c = vec![];
-        for _x in 0..context.n {
-            let t = rng.gen_range(-1i32, 2i32);
-            if t >= 0 {
-                c.push(T::from(t as u32));
-            } else {
-                c.push(T::sub(&context.q, &T::one()));
-            }
-        }
-        RqPoly {
-            coeffs: c,
-            is_ntt_form: false,
-            context: Some(context),
-        }
-    }
-
-    pub(crate) fn sample_ternary_poly_prng<T>(context: Arc<RqPolyContext<T>>) -> RqPoly<T>
-    where
-        T: ArithUtils<T> + From<u32>,
-    {
-        let mut rng = StdRng::from_entropy();
-        let mut c = vec![];
-        for _x in 0..context.n {
-            let t = rng.gen_range(-1i32, 2i32);
-            if t >= 0 {
-                c.push(T::from(t as u32));
-            } else {
-                c.push(T::sub(&context.q, &T::one()));
-            }
-        }
-        RqPoly {
-            coeffs: c,
-            is_ntt_form: false,
-            context: Some(context),
-        }
-    }
-
-    /// Sample a polynomial with Gaussian coefficients in the ring Rq.
-    pub fn sample_gaussian_poly<T>(context: Arc<RqPolyContext<T>>, stdev: f64) -> RqPoly<T>
-    where
-        T: SuperTrait<T>,
-    {
-        let mut c = vec![];
-        let normal = Normal::new(0.0, stdev);
-        let mut rng = thread_rng();
-        let q = context.q.rep() as f64; 
-        for _ in 0..context.n {
-            let tmp = normal.sample(&mut rng);
-
-            // branch on sign
-            if tmp >= 0.0 {
-                c.push(T::from(tmp as u64));
-            } else {
-                c.push(T::from((q + tmp) as u64));
-            }
-        }
-        RqPoly {
-            coeffs: c,
-            is_ntt_form: false,
-            context: Some(context),
-        }
-    }
-
-    /// Sample a uniform polynomial in the ring Rq.
-    pub(crate) fn sample_uniform_poly<T>(context: Arc<RqPolyContext<T>>) -> RqPoly<T>
-    where
-        T: ArithUtils<T> + From<u32>,
-    {
-        let mut c = vec![];
-        let mut rng = StdRng::from_entropy();
-        for _x in 0..context.n {
-            c.push(T::sample_below_from_rng(&context.q, &mut rng));
-        }
-        RqPoly {
-            coeffs: c,
-            is_ntt_form: false,
-            context: Some(context),
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -580,7 +486,7 @@ mod tests {
         let q = Scalar::new_modulus(18014398492704769u64);
         let context = RqPolyContext::new(2048, &q);
         let arc = Arc::new(context);
-        let a = randutils::sample_uniform_poly(arc.clone());
+        let a = crate::randutils::sample_uniform_poly(arc.clone());
         let mut aa = a.clone();
         aa.forward_transform();
         aa.inverse_transform();
@@ -613,8 +519,8 @@ mod tests {
         let context = RqPolyContext::new(2048, &q);
         let arc = Arc::new(context);
 
-        let a = randutils::sample_uniform_poly(arc.clone());
-        let b = randutils::sample_uniform_poly(arc.clone());
+        let a = crate::randutils::sample_uniform_poly(arc.clone());
+        let b = crate::randutils::sample_uniform_poly(arc.clone());
         let c = a.multiply(&b);
         let c1 = a.multiply_fast(&b);
         assert_eq!(c.coeffs, c1.coeffs);
@@ -631,7 +537,7 @@ mod tests {
         let q = Scalar::new_modulus(18014398492704769u64);
         let context = RqPolyContext::new(4, &q);
         let arc = Arc::new(context);
-        let mut a = randutils::sample_uniform_poly(arc.clone());
+        let mut a = crate::randutils::sample_uniform_poly(arc.clone());
         let mut aa = a.clone();
 
         aa.forward_transform();
@@ -647,7 +553,7 @@ mod tests {
         let q = Scalar::new_modulus(18014398492704769u64);
         let context = RqPolyContext::new(4, &q);
         let arc = Arc::new(context);
-        let mut a = randutils::sample_uniform_poly(arc.clone());
+        let mut a = crate::randutils::sample_uniform_poly(arc.clone());
         a.set_ntt_form(true);
         let mut aa = a.clone();
         aa.inverse_transform();

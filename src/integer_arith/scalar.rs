@@ -4,11 +4,15 @@
 // LICENSE file in the root directory of this source tree.
 use crate::integer_arith::{ArithOperators, ArithUtils, SuperTrait};
 use modinverse::modinverse;
-use rand::rngs::StdRng;
-use rand::FromEntropy;
-use rand::RngCore;
+use rand::rngs::{StdRng,ThreadRng};
+use rand::{FromEntropy,RngCore,CryptoRng}; 
+use rand::{thread_rng};
+use super::Rng; 
 use ::std::ops;
 pub use std::sync::Arc;
+
+impl Rng for StdRng {}
+impl Rng for ThreadRng {}
 
 /// The ScalarContext class contains useful auxilliary information for fast modular reduction against a Scalar instance.
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -222,13 +226,14 @@ impl ArithUtils<Scalar> for Scalar {
     }
 
     // sample below using a given rng.
-    fn sample_below_from_rng(upper_bound: &Scalar, rng: &mut StdRng) -> Self {
-        loop {
-            let n = Self::_sample_form_rng(upper_bound.bit_count, rng);
-            if n < upper_bound.rep {
-                return Scalar::new(n);
-            }
-        }
+    fn sample_below_from_rng(upper_bound: &Scalar, rng: &mut Rng) -> Self {
+        upper_bound.sample(rng)
+        // loop {
+        //     let n = Self::_sample_from_rng(upper_bound.bit_count, rng);
+        //     if n < upper_bound.rep {
+        //         return Scalar::new(n);
+        //     }
+        // }
     }
 
     fn modulus(a: &Scalar, q: &Scalar) -> Scalar {
@@ -266,7 +271,17 @@ impl Scalar {
         res
     }
 
-    fn _sample_form_rng(bit_size: usize, rng: &mut StdRng) -> u64 {
+    fn sample(&self, rng: &mut Rng) -> Scalar {
+        let max_multiple = self.rep() * (u64::MAX / self.rep() ); 
+        loop{
+            let a = rng.next_u64(); 
+            if a < max_multiple {
+                return Scalar::modulus(&Scalar::from(a), self);
+            }
+        }
+    }
+
+    fn _sample_from_rng(bit_size: usize, rng: &mut Rng) -> u64 {
         let bytes = (bit_size - 1) / 8 + 1;
         let mut buf: Vec<u8> = vec![0; bytes];
         rng.fill_bytes(&mut buf);
@@ -283,7 +298,7 @@ impl Scalar {
 
     fn _sample(bit_size: usize) -> u64 {
         let mut rng = StdRng::from_entropy();
-        Self::_sample_form_rng(bit_size, &mut rng)
+        Self::_sample_from_rng(bit_size, &mut rng)
     }
 
     fn _sub_mod(a: &Scalar, b: &Scalar, q: u64) -> Self {
@@ -401,6 +416,16 @@ mod tests {
         let q_scalar = Scalar::new_modulus(q);
         for _ in 0..10 {
             assert!(Scalar::sample_blw(&q_scalar).rep < q);
+        }
+    }
+
+    #[test]
+    fn test_sample_below_prng() {
+        let q: u64 = 18014398492704769;
+        let q_scalar = Scalar::new_modulus(q);
+        let mut rng = thread_rng(); 
+        for _ in 0..10 {
+            assert!(Scalar::sample_below_from_rng(&q_scalar, &mut rng).rep < q);
         }
     }
     #[test]

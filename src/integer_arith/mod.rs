@@ -6,12 +6,11 @@ pub mod scalar;
 pub mod butterfly;
 pub mod util;
 
-// use ::std::ops;
+use rand::CryptoRng; 
 
 #[cfg(feature = "bigint")]
 pub mod bigint;
 
-use rand::StdRng;
 /// The trait for utility functions related to scalar-like types.
 pub trait ArithUtils<T> {
 
@@ -25,7 +24,7 @@ pub trait ArithUtils<T> {
     // sample a value in [0, bound-1]
     fn sample_blw(bound: &T) -> T;
 
-    fn sample_below_from_rng(bound: &T, rng: &mut StdRng) -> T;
+    fn sample_below_from_rng(bound: &T, rng: &mut Rng) -> T;
 
     fn one() -> T {
         Self::from_u32_raw(1u32)
@@ -67,3 +66,5 @@ pub trait ArithOperators{
 }
 
 pub trait SuperTrait<T>: ArithOperators + ArithUtils<T> + Clone + From<u64> + From<u32> + PartialEq{}
+
+pub trait Rng: rand::CryptoRng + rand::RngCore {}

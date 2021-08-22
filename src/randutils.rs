@@ -78,13 +78,11 @@ where
 /// Sample a uniform polynomial in the ring Rq.
 pub fn sample_uniform_poly<T>(context: Arc<RqPolyContext<T>>) -> RqPoly<T>
 where
-    T: ArithUtils<T> + From<u32>,
+    T: SuperTrait<T>,
 {
-    let mut c = vec![];
-    let mut rng = StdRng::from_entropy();
-    for _x in 0..context.n {
-        c.push(T::sample_below_from_rng(&context.q, &mut rng));
-    }
+    let mut rng = thread_rng();
+
+    let c: Vec<T> = vec![0;context.n].iter().map(|_| T::sample_below_from_rng(&context.q, &mut rng)).collect();
     RqPoly {
         coeffs: c,
         is_ntt_form: false,

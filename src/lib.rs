@@ -300,7 +300,7 @@ where
 
         // add large noise poly for noise flooding.
         let elarge =
-            rqpoly::randutils::sample_gaussian_poly(self.context.clone(), self.flooding_stdev);
+            randutils::sample_gaussian_poly(self.context.clone(), self.flooding_stdev);
         ct.1.add_inplace(&elarge);
     }
 }
@@ -398,7 +398,7 @@ where
     T: SuperTrait<T>,
 {
     fn generate_key(&self) -> SecretKey<T> {
-        let mut skpoly = rqpoly::randutils::sample_ternary_poly(self.context.clone());
+        let mut skpoly = randutils::sample_ternary_poly(self.context.clone());
         if self.context.is_ntt_enabled {
             skpoly.forward_transform();
         }
@@ -448,8 +448,8 @@ where
     }
 
     fn encrypt_zero_sk(&self, sk: &SecretKey<T>) -> FVCiphertext<T> {
-        let e = rqpoly::randutils::sample_gaussian_poly(self.context.clone(), self.stdev);
-        let a = rqpoly::randutils::sample_uniform_poly(self.context.clone());
+        let e = randutils::sample_gaussian_poly(self.context.clone(), self.stdev);
+        let a = randutils::sample_uniform_poly(self.context.clone());
         let mut b = (self.poly_multiplier)(&a, &sk.0);
         b.add_inplace(&e);
         (a, b)
@@ -510,8 +510,12 @@ where
     T: SuperTrait<T>,
 {
     fn encrypt_sk(&self, pt: &FVPlaintext<T>, sk: &SecretKey<T>) -> FVCiphertext<T> {
-        let e = rqpoly::randutils::sample_gaussian_poly(self.context.clone(), self.stdev);
-        let a = rqpoly::randutils::sample_uniform_poly(self.context.clone());
+        let e = randutils::sample_gaussian_poly(self.context.clone(), self.stdev);
+        // let a = randutils::sample_uniform_poly(self.context.clone());
+        // let e  = RqPoly::new(self.context.clone()); 
+        let mut a = RqPoly::new(self.context.clone()); 
+        // let e2 = RqPoly::new(self.context.clone()); 
+
 
         let mut b = (self.poly_multiplier)(&a, &sk.0);
         b.add_inplace(&e);
@@ -530,20 +534,22 @@ where
         let mut phase = ct.1.clone();
         phase.sub_inplace(&temp1);
         // then, extract value from phase.
-        let mut c: Vec<T> = vec![];
-        for x in phase.coeffs {
-            // let mut tmp = x << 8;  // x * t, need to make sure there's no overflow.
-            let mut tmp = T::mul(&x, &self.t);
-            // tmp += &self.qdivtwo;
-            tmp = T::add(&tmp, &self.qdivtwo);
-            // tmp /= &self.q;
-            tmp = T::div(&tmp, &self.q);
-            // modulo t.
-            tmp = T::modulus(&tmp, &self.t);
+        let tt: u64 = self.t.rep(); 
+        let qq: u64 = self.q.rep(); 
+        let qdivtwo = qq / 2; 
 
-            c.push(tmp);
-        }
-        c
+        let my_closure = |elm: &T| -> T{
+            let mut tmp:u64 = elm.rep(); 
+            tmp *= tt;
+            tmp += qdivtwo;  
+            tmp/= qq; 
+            tmp %= tt; 
+            return T::from(tmp);
+        }; 
+
+        return phase.coeffs.iter()
+        .map(my_closure)
+        .collect();
     }
 }
 
