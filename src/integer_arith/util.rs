@@ -1,12 +1,16 @@
+// Copyright (c) Facebook, Inc. and its affiliates.
+//
+// This source code is licensed under the MIT license found in the
+// LICENSE file in the root directory of this source tree.
 
 /// computes floor(a*b/pow(2,64))
 pub fn mul_high_word(a: u64, b:u64) -> u64{
-  return ((a as u128 * b as u128) >> 64) as u64;
+    ((a as u128 * b as u128) >> 64) as u64
 }
 
 /// computes floor(w*pow(2,64)/q)
 pub fn compute_harvey_ratio(w: u64, q: u64) -> u64{
-  return (((w as u128) << 64 )/ q as u128) as u64; 
+    (((w as u128) << 64 )/ q as u128) as u64
 }
 
 pub fn mul_low_word(a: u64, b: u64) -> u64 {

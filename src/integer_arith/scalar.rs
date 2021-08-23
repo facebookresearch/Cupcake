@@ -5,8 +5,7 @@
 use crate::integer_arith::{ArithOperators, ArithUtils, SuperTrait};
 use modinverse::modinverse;
 use rand::rngs::{StdRng,ThreadRng};
-use rand::{FromEntropy,RngCore,CryptoRng}; 
-use rand::{thread_rng};
+use rand::{FromEntropy}; 
 use super::Rng; 
 use ::std::ops;
 pub use std::sync::Arc;
@@ -226,18 +225,15 @@ impl ArithUtils<Scalar> for Scalar {
     }
 
     // sample below using a given rng.
-    fn sample_below_from_rng(upper_bound: &Scalar, rng: &mut Rng) -> Self {
+    fn sample_below_from_rng(upper_bound: &Scalar, rng: &mut dyn Rng) -> Self {
         upper_bound.sample(rng)
-        // loop {
-        //     let n = Self::_sample_from_rng(upper_bound.bit_count, rng);
-        //     if n < upper_bound.rep {
-        //         return Scalar::new(n);
-        //     }
-        // }
     }
 
     fn modulus(a: &Scalar, q: &Scalar) -> Scalar {
-        Scalar::new(a.rep % q.rep)
+        match &q.context{
+            Some(context) => {Scalar::from(Scalar::_barret_reduce((a.rep(), 0), context.barrett_ratio, q.rep()))}
+            None => Scalar::new(a.rep % q.rep)
+        }
     }
 
     fn mul(a: &Scalar, b: &Scalar) -> Scalar {
@@ -271,7 +267,7 @@ impl Scalar {
         res
     }
 
-    fn sample(&self, rng: &mut Rng) -> Scalar {
+    fn sample(&self, rng: &mut dyn Rng) -> Scalar {
         let max_multiple = self.rep() * (u64::MAX / self.rep() ); 
         loop{
             let a = rng.next_u64(); 
@@ -281,7 +277,7 @@ impl Scalar {
         }
     }
 
-    fn _sample_from_rng(bit_size: usize, rng: &mut Rng) -> u64 {
+    fn _sample_from_rng(bit_size: usize, rng: &mut dyn Rng) -> u64 {
         let bytes = (bit_size - 1) / 8 + 1;
         let mut buf: Vec<u8> = vec![0; bytes];
         rng.fill_bytes(&mut buf);
@@ -330,9 +326,10 @@ impl Scalar {
         // compute w = a*ratio >> 128.
 
         // start with lw(a1r1)
-        // let mut w= Scalar::multiply_u64(a.1, ratio.1).0;
-        let mut w = a.1.wrapping_mul(ratio.1);
-
+        let mut w = 0; 
+        if a.1 != 0{
+            w = a.1.wrapping_mul(ratio.1);
+        }
         let a0r0 = Scalar::_multiply_u64(a.0, ratio.0);
 
         let a0r1 = Scalar::_multiply_u64(a.0, ratio.1);
@@ -345,11 +342,13 @@ impl Scalar {
         w += carry as u64;
 
         // Round2
-        let a1r0 = Scalar::_multiply_u64(a.1, ratio.0);
-        w += a1r0.1;
-        // final carry
-        let (_, carry2) = Scalar::_add_u64(a1r0.0, tmp);
-        w += carry2 as u64;
+        if a.1 != 0{
+            let a1r0 = Scalar::_multiply_u64(a.1, ratio.0);
+            w += a1r0.1;
+            // final carry
+            let (_, carry2) = Scalar::_add_u64(a1r0.0, tmp);
+            w += carry2 as u64;
+        }
 
         // low = w*q mod 2^64.
         // let low = Scalar::multiply_u64(w, q).0;
@@ -421,6 +420,7 @@ mod tests {
 
     #[test]
     fn test_sample_below_prng() {
+        use rand::{thread_rng};
         let q: u64 = 18014398492704769;
         let q_scalar = Scalar::new_modulus(q);
         let mut rng = thread_rng(); 

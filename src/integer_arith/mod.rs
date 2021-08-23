@@ -6,8 +6,6 @@ pub mod scalar;
 pub mod butterfly;
 pub mod util;
 
-use rand::CryptoRng; 
-
 #[cfg(feature = "bigint")]
 pub mod bigint;
 
@@ -24,7 +22,7 @@ pub trait ArithUtils<T> {
     // sample a value in [0, bound-1]
     fn sample_blw(bound: &T) -> T;
 
-    fn sample_below_from_rng(bound: &T, rng: &mut Rng) -> T;
+    fn sample_below_from_rng(bound: &T, rng: &mut dyn Rng) -> T;
 
     fn one() -> T {
         Self::from_u32_raw(1u32)

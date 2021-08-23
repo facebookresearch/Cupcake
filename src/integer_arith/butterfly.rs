@@ -9,7 +9,7 @@ use super::{SuperTrait, ArithUtils};
 #[allow(non_snake_case)]
 pub fn inverse_butterfly<T>(X: &mut T, Y: &mut T, W: &T, q: &T) where T: ArithUtils<T>{
     let temp  = T::sub_mod(X,Y, q);
-    *X = T::add_mod(X, &Y, q);
+    *X = T::add_mod(X, Y, q);
     *Y = T::mul_mod(W, &temp, q);
 }
 
@@ -38,17 +38,17 @@ pub fn lazy_butterfly<T>(X: &mut T, Y: &mut T, W: u64, Wprime: u64, q: &T, twoq:
     *Y = T::from(xx + twoq - quo); 
 }
 
-pub fn lazy_butterfly_u64(mut x: u64, y:u64, W: u64, wprime: u64, q: u64, twoq: u64) -> (u64, u64){
+pub fn lazy_butterfly_u64(mut x: u64, y:u64, w: u64, wprime: u64, q: u64, twoq: u64) -> (u64, u64){
     // let twoq = 0; 
     if x > twoq{
         x -= twoq; 
     }
     let _qq = super::util::mul_high_word(wprime, y);
-    let quo = W.wrapping_mul(y) - _qq.wrapping_mul(q);
+    let quo = w.wrapping_mul(y) - _qq.wrapping_mul(q);
     (x + quo, x + twoq - quo)
 }
 
-pub fn lazy_inverse_butterfly_u64(x: u64, y:u64, W: u64, wprime: u64, q: u64, twoq: u64) -> (u64, u64){
+pub fn lazy_inverse_butterfly_u64(x: u64, y:u64, w: u64, wprime: u64, q: u64, twoq: u64) -> (u64, u64){
     let mut xx = x+y;
     	
     if xx > twoq {
@@ -56,7 +56,7 @@ pub fn lazy_inverse_butterfly_u64(x: u64, y:u64, W: u64, wprime: u64, q: u64, tw
     }
     let t = twoq - y + x; 
     let quo = super::util::mul_high_word(wprime, t); 
-    let yy = W.wrapping_mul(t) - quo.wrapping_mul(q); 
+    let yy = w.wrapping_mul(t) - quo.wrapping_mul(q); 
     (xx, yy)
 }
 

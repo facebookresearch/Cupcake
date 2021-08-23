@@ -1,6 +1,6 @@
 use crate::integer_arith::butterfly::{lazy_butterfly_u64, lazy_inverse_butterfly_u64}; 
 
-pub fn lazy_ntt_u64(v: &mut Vec<u64>, roots: &Vec<u64>, scaled_roots: &Vec<u64>, q: u64){
+pub fn lazy_ntt_u64(v: &mut [u64], roots: &[u64], scaled_roots: &[u64], q: u64){
     let n = v.len(); 
     let twoq = q << 1; 
 
@@ -22,7 +22,7 @@ pub fn lazy_ntt_u64(v: &mut Vec<u64>, roots: &Vec<u64>, scaled_roots: &Vec<u64>,
     }
 }
 
-pub fn lazy_inverse_ntt_u64(v: &mut Vec<u64>, invroots: &Vec<u64>, scaled_invroots: &Vec<u64>, q: u64){
+pub fn lazy_inverse_ntt_u64(v: &mut [u64], invroots: &[u64], scaled_invroots: &[u64], q: u64){
     let n = v.len(); 
     let twoq = q << 1; 
 

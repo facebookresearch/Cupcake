@@ -260,7 +260,7 @@ where
     // add a plaintext into a FVCiphertext.
     fn add_plain_inplace(&self, ct: &mut FVCiphertext<T>, pt: &FVPlaintext<T>) {
         for (ct_coeff, pt_coeff) in ct.1.coeffs.iter_mut().zip(pt.iter()) {
-            let temp = T::mul(&pt_coeff, &self.delta);
+            let temp = T::mul(pt_coeff, &self.delta);
             *ct_coeff = T::add_mod(ct_coeff, &temp, &self.q);
         }
     }
@@ -330,8 +330,8 @@ where
             n,
             t: t.clone(),
             flooding_stdev: 2f64.powi(40),
-            delta: T::div(q, &t), // &q/t,
-            qdivtwo: T::div(q, &T::from(2 as u32)), // &q/2,
+            delta: T::div(q, t), // &q/t,
+            qdivtwo: T::div(q, &T::from(2_u32)), // &q/2,
             q: q.clone(),
             stdev: 3.2,
             context,
@@ -468,7 +468,7 @@ where
         // c1 = bu+e2 + Delta*m
         let iter = c1.coeffs.iter_mut().zip(pt.iter());
         for (x, y) in iter {
-            let temp = T::mul(&y, &self.delta);
+            let temp = T::mul(y, &self.delta);
             *x = T::add_mod(x, &temp, &self.q);
         }
         (c0, c1)
@@ -511,10 +511,7 @@ where
 {
     fn encrypt_sk(&self, pt: &FVPlaintext<T>, sk: &SecretKey<T>) -> FVCiphertext<T> {
         let e = randutils::sample_gaussian_poly(self.context.clone(), self.stdev);
-        // let a = randutils::sample_uniform_poly(self.context.clone());
-        // let e  = RqPoly::new(self.context.clone()); 
-        let mut a = RqPoly::new(self.context.clone()); 
-        // let e2 = RqPoly::new(self.context.clone()); 
+        let a = randutils::sample_uniform_poly(self.context.clone());
 
 
         let mut b = (self.poly_multiplier)(&a, &sk.0);
@@ -523,7 +520,7 @@ where
         // add scaled plaintext to
         let iter = b.coeffs.iter_mut().zip(pt.iter());
         for (x, y) in iter {
-            let temp = T::mul(&y, &self.delta);
+            let temp = T::mul(y, &self.delta);
             *x = T::add_mod(x, &temp, &self.q);
         }
         (a, b)
@@ -542,9 +539,9 @@ where
             let mut tmp:u64 = elm.rep(); 
             tmp *= tt;
             tmp += qdivtwo;  
-            tmp/= qq; 
+            tmp /= qq; 
             tmp %= tt; 
-            return T::from(tmp);
+            T::from(tmp)
         }; 
 
         return phase.coeffs.iter()

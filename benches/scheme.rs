@@ -7,8 +7,6 @@ extern crate bencher;
 pub use std::sync::Arc;
 use bencher::Bencher;
 use cupcake::traits::*;
-use cupcake::integer_arith::scalar::Scalar;
-use cupcake::integer_arith::ArithUtils;
 
 
 fn encrypt_sk(bench: &mut Bencher) {

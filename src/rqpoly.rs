@@ -3,7 +3,7 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 use crate::integer_arith::{SuperTrait, ArithUtils};
-use crate::integer_arith::butterfly::{inverse_butterfly,butterfly, lazy_butterfly, lazy_inverse_butterfly};
+use crate::integer_arith::butterfly::{inverse_butterfly,butterfly};
 use crate::polyarith::lazy_ntt::{lazy_ntt_u64, lazy_inverse_ntt_u64};
 use crate::integer_arith::util::compute_harvey_ratio; 
 use crate::utils::reverse_bits_perm;
@@ -32,7 +32,7 @@ pub struct RqPoly<T> {
 }
 
 impl<T> RqPoly<T> where T:Clone{
-    pub fn new_without_context(coeffs: &Vec<T>, is_ntt_form:bool) -> Self{
+    pub fn new_without_context(coeffs: &[T], is_ntt_form:bool) -> Self{
         RqPoly{
             context: None,
             coeffs: coeffs.to_vec(),
@@ -249,21 +249,6 @@ where
     fn inverse_transform(&mut self) {
         self.lazy_inverse_ntt()
     }
-
-    fn coeffwise_multiply(&self, other: &Self) -> Self {
-        let context = self.context.as_ref().unwrap();
-        let q = context.q.clone();
-        let mut c = self.clone();
-        for (inputs, cc) in self
-            .coeffs
-            .iter()
-            .zip(other.coeffs.iter())
-            .zip(c.coeffs.iter_mut())
-        {
-            *cc = T::mul_mod(inputs.0, inputs.1, &q);
-        }
-        c
-    }
 }
 
 // NTT implementation
@@ -301,11 +286,6 @@ where
                     // butteffly: 
                     let (a, b) = self.coeffs.split_at_mut(j+1);
                     butterfly(&mut a[j], &mut b[t-1], phi, &q);
-                    // self.coeffs[j] = aj; 
-                    // self.coeffs[j+t] = ajplust; 
-                    // let x = T::mul_mod(&self.coeffs[j + t], &phi, &q);
-                    // self.coeffs[j + t] = T::sub_mod(&self.coeffs[j], &x, &q);
-                    // self.coeffs[j] = T::add_mod(&self.coeffs[j], &x, &q);
                 }
             }
             m <<= 1;
@@ -334,13 +314,6 @@ where
                     // inverse butterfly
                     let (a, b) = self.coeffs.split_at_mut(j+1);
                     inverse_butterfly(&mut a[j], &mut b[t-1], s, &q);
-
-                    // let u = self.coeffs[j].clone();
-                    // let v = self.coeffs[j + t].clone();
-                    // self.coeffs[j] = T::add_mod(&u, &v, &q);
-
-                    // let tmp = T::sub_mod(&u, &v, &q);
-                    // self.coeffs[j + t] = T::mul_mod(&tmp, &s, &q);
                 }
                 j1 += 2 * t;
             }
@@ -351,20 +324,6 @@ where
             self.coeffs[x] = T::mul_mod(&ninv, &self.coeffs[x], &q);
         }
         self.set_ntt_form(false);
-    }
-
-    fn coeffwise_multiply(&self, other: &Self) -> Self {
-        let context = self.context.as_ref().unwrap();
-        let mut c = self.clone();
-        for (inputs, cc) in self
-            .coeffs
-            .iter()
-            .zip(other.coeffs.iter())
-            .zip(c.coeffs.iter_mut())
-        {
-            *cc = T::mul_mod(inputs.0, inputs.1, &context.q);
-        }
-        c
     }
 }
 
@@ -382,6 +341,20 @@ where T: SuperTrait<T>{
         }
         let mut c = a.coeffwise_multiply(&b);
         c.inverse_transform();
+        c
+    }
+
+    fn coeffwise_multiply(&self, other: &Self) -> Self {
+        let context = self.context.as_ref().unwrap();
+        let mut c = self.clone();
+        for (inputs, cc) in self
+            .coeffs
+            .iter()
+            .zip(other.coeffs.iter())
+            .zip(c.coeffs.iter_mut())
+        {
+            *cc = T::mul_mod(inputs.0, inputs.1, &context.q);
+        }
         c
     }
 }
