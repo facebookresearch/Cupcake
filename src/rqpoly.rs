@@ -229,7 +229,6 @@ where
 }
 
 // NTT implementation(lazy version)
-#[cfg(feature = "lazy_ntt")]
 impl<T> NTT<T> for RqPoly<T>
 where
     T: SuperTrait<T>
@@ -248,82 +247,6 @@ where
 
     fn inverse_transform(&mut self) {
         self.lazy_inverse_ntt()
-    }
-}
-
-// NTT implementation
-#[cfg(not(feature = "lazy_ntt"))]
-impl<T> NTT<T> for RqPoly<T>
-where
-    T: ArithUtils<T> + Clone,
-{
-    fn is_ntt_form(&self) -> bool {
-        self.is_ntt_form
-    }
-
-    fn set_ntt_form(&mut self, value: bool) {
-        self.is_ntt_form = value;
-    }
-
-    fn forward_transform(&mut self) {
-        let context = self.context.as_ref().unwrap();
-        if self.is_ntt_form {
-            panic!("is already in ntt");
-        }
-
-        let n = context.n;
-        let q = context.q.clone();
-
-        let mut t = n;
-        let mut m = 1;
-        while m < n {
-            t >>= 1;
-            for i in 0..m {
-                let j1 = 2 * i * t;
-                let j2 = j1 + t - 1;
-                let phi = &context.roots[m + i];
-                for j in j1..j2 + 1 {
-                    // butteffly: 
-                    let (a, b) = self.coeffs.split_at_mut(j+1);
-                    butterfly(&mut a[j], &mut b[t-1], phi, &q);
-                }
-            }
-            m <<= 1;
-        }
-        self.set_ntt_form(true);
-    }
-
-    fn inverse_transform(&mut self) {
-        let context = self.context.as_ref().unwrap();
-        if !self.is_ntt_form {
-            panic!("is already not in ntt");
-        }
-        let n = context.n;
-        let q = context.q.clone();
-
-        let mut t = 1;
-        let mut m = n;
-        let ninv = T::inv_mod(&T::from_u32(n as u32, &q), &q);
-        while m > 1 {
-            let mut j1 = 0;
-            let h = m >> 1;
-            for i in 0..h {
-                let j2 = j1 + t - 1;
-                let s = &context.invroots[h + i];
-                for j in j1..j2 + 1 {
-                    // inverse butterfly
-                    let (a, b) = self.coeffs.split_at_mut(j+1);
-                    inverse_butterfly(&mut a[j], &mut b[t-1], s, &q);
-                }
-                j1 += 2 * t;
-            }
-            t <<= 1;
-            m >>= 1;
-        }
-        for x in 0..n {
-            self.coeffs[x] = T::mul_mod(&ninv, &self.coeffs[x], &q);
-        }
-        self.set_ntt_form(false);
     }
 }
 

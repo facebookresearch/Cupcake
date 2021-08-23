@@ -23,9 +23,6 @@ path = "src/lib.rs"
 
 [features]
 bench = []
-lazy_ntt = []
-default = []
-
 
 [[example]]
 name = "basic"
