@@ -12,7 +12,10 @@ description = "An implementation of a lattice-based additive homomorphic encrypt
 [dependencies]
 rand = "0.5.5"
 modinverse = "0.1.1"
-
+rayon = "1.3.0"
+#prelude = "0.2.1"
+serde = {version = "1.0.104", features = ["derive"] }
+byte_buffer = "0.1"
 [dev-dependencies]
 bencher = "0.1.5"
 

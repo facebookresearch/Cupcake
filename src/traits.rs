@@ -40,6 +40,8 @@ pub trait PKEncryption<CT, PT, SK>: SKEncryption<CT, PT, SK> {
 pub trait CipherPlainAddition<CT, PT>: {
     /// Add a plaintext into a ciphertext.
     fn add_plain_inplace(&self, ct1: &mut CT, pt: &PT);
+
+    fn sub_plain_inplace(&self, ct1: &mut CT, pt: &PT);
 }
 
 

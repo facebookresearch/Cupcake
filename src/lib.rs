@@ -256,6 +256,14 @@ where
             *ct_coeff = T::add_mod(ct_coeff, &temp, &self.q);
         }
     }
+
+    // not implemented yet
+    fn sub_plain_inplace(&self, ct: &mut FVCiphertext<T>, pt: &FVPlaintext<T>) {
+        for (ct_coeff, pt_coeff) in ct.1.coeffs.iter_mut().zip(pt.iter()) {
+            let temp = T::mul(&pt_coeff, &self.delta);
+            *ct_coeff = T::sub_mod(ct_coeff, &temp, &self.q);
+        }
+    }
 }
 
 
@@ -271,6 +279,14 @@ where
             *ct_coeff = T::add_mod(ct_coeff, &temp, &self.q);
         }
     }
+
+    fn sub_plain_inplace(&self, ct: &mut FVCiphertext<T>, pt: &DefaultFVPlaintext) {
+        for (ct_coeff, pt_coeff) in ct.1.coeffs.iter_mut().zip(pt.iter()) {
+            let temp = T::mul(&T::from(*pt_coeff as u32), &self.delta);
+            *ct_coeff = T::sub_mod(ct_coeff, &temp, &self.q);
+        }
+    }
+
 }
 
 
