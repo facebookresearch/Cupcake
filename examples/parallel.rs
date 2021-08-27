@@ -42,7 +42,22 @@ fn smartprint<T: std::fmt::Debug>(v: &Vec<T>) {
     println!("[{:?}, {:?}, ..., {:?}]", v[0], v[1], v[v.len() - 1]);
 }
 
+fn smartprint2<T: std::fmt::Debug>(v: &Vec< Vec<T>>) {
+    smartprint(&v[0]);
+    smartprint(&v[1]);
+    smartprint(&v[v.len() -1]);
+}
+
+
 // a struct for Parallel Cupcake operations
+
+    // usage for main method PS3I outline:
+    //      cargo run --example parallel
+    //      cargo run --release --example parallel
+    // usage for CupcakeParallel tests
+    //      cargo test --examples parallel
+    //      cargo test --release --examples parallel
+
 pub struct CupcakeParallel {
     pub scheme: DefaultShemeType,
     pub pk: FVCiphertext<Scalar>,
@@ -166,48 +181,74 @@ impl CupcakeParallel {
         let scheme_ = &self.scheme;
         scheme_.add_plain_inplace( ct, pt);
     }
-
-
 }
 
 
+
 fn main() {
+    // Oultine of PS3I HE operations using cupcake
 
-    let parcipher = CupcakeParallel::new();
+    //////////////  SETUP ///////////////////
 
-    let  vv = vec![ vec![1;2048 ],
-                    vec![2;2048 ],
-                    vec![3;2048 ]];
+    // company and partner generate HE key pairs
+    let parfv_company = CupcakeParallel::new();
+    let parfv_partner = CupcakeParallel::new();
 
-    // encrypt and serialize
-    let payload = parcipher.parallel_encrypt_serialize(&vv);
+    // TODO: what we would really do is serialize the schemes and public keys and
+    //       exchange; then have the recieving party create their own CupcakeParallel
+    //       object initialized with the other party's scheme and pk and with a zero sk
 
-    // deserialize and decrypt
-    let ww = parcipher.parallel_deserialize_decrypt(&payload);
+    //////////////  Step 1 Company ///////////////////
+    let n = parfv_partner.scheme.n;
+    let  v_c:Vec<Vec<u8>> = vec![ vec![10;n ],
+                                  vec![20;n ],
+                                  vec![30;n ]];
 
-    println!("print ww");
-    for i in 0..3{
-        smartprint(&ww[i]);
-    }
+    let ctv_c = parfv_company.parallel_encrypt_serialize(&v_c);
 
-    //parallel add
-    let vv_ww = parcipher.parallel_plaintext_ciphertext_add(&payload,&vv);
-    let plain_vv_ww = parcipher.parallel_deserialize_decrypt(&vv_ww);
-    println!("print vv+ ww");
-    for i in 0..3{
-        smartprint(&plain_vv_ww[i]);
-    }
+    println!("v_c: ");
+    smartprint2(&v_c);
 
-    //parallel subtract and rerandomize
-    let  zz = vec![ vec![10;2048 ],
-                    vec![20;2048 ],
-                    vec![30;2048 ]];
-    let vv_ww_minus_zz = parcipher.parallel_plaintext_ciphertext_subtract_rerandomize(&vv_ww,&zz );
-    let plain_vv_ww_minus_zz = parcipher.parallel_deserialize_decrypt(&vv_ww_minus_zz);
-    println!("print vv + ww - zz");
-    for i in 0..3{
-        smartprint(&plain_vv_ww_minus_zz[i]);
-    }
+    //////////////  Step 1 Partner ///////////////////
+    let  v_p:Vec<Vec<u8>>  = vec![ vec![40;n ],
+                                   vec![50;n ],
+                                   vec![60;n ]];
+
+    let ctv_p = parfv_partner.parallel_encrypt_serialize(&v_p);
+
+    println!("v_p: ");
+    smartprint2(&v_p);
+
+    let  r_c:Vec<Vec<u8>>  = vec![ vec![1;n ],
+                                   vec![2;n ],
+                                   vec![3;n ]];
+
+    let ctv_c_double_prime = parfv_company.parallel_plaintext_ciphertext_subtract_rerandomize(&ctv_c, &r_c);
+
+    println!("r_c: ");
+    smartprint2(&r_c);
+
+    // //////////////  Step 2 Company ///////////////////
+    let  r_p:Vec<Vec<u8>>  = vec![ vec![4;n ],
+                                   vec![5;n ],
+                                   vec![6;n ]];
+
+    let ctv_p_double_prime = parfv_partner.parallel_plaintext_ciphertext_subtract_rerandomize(&ctv_p, &r_p);
+
+    println!("r_p: ");
+    smartprint2(&r_p);
+
+    let v_c_double_prime = parfv_company.parallel_deserialize_decrypt(&ctv_c_double_prime);
+
+    println!("decrypted v_c_double_prime = v_c - r_c: ");
+    smartprint2(&v_c_double_prime);
+
+    // //////////////  Step 2 Partner ///////////////////
+    let v_p_double_prime = parfv_partner.parallel_deserialize_decrypt(&ctv_p_double_prime);
+
+    println!("decrypted v_p_double_prime = v_p - r_p: ");
+    smartprint2(&v_p_double_prime);
+
 
 }
 
@@ -220,8 +261,8 @@ mod fv_scalar_tests {
         let parallelfv = CupcakeParallel::new();
 
         let  v = vec![ vec![1;parallelfv.scheme.n ],
-                        vec![2;parallelfv.scheme.n ],
-                        vec![3;parallelfv.scheme.n ]];
+                       vec![2;parallelfv.scheme.n ],
+                       vec![3;parallelfv.scheme.n ]];
 
         let ctbytes = parallelfv.parallel_encrypt_serialize(&v);
         let pt_actual = parallelfv.parallel_deserialize_decrypt(&ctbytes);
@@ -247,8 +288,8 @@ mod fv_scalar_tests {
         let pt_actual = parallelfv.parallel_deserialize_decrypt(&ctv_wbytes);
 
         let mut vplusw = vec![ vec![0;parallelfv.scheme.n ],
-                        vec![0;parallelfv.scheme.n ],
-                        vec![0;parallelfv.scheme.n ]];
+                         vec![0;parallelfv.scheme.n ],
+                         vec![0;parallelfv.scheme.n ]];
         for i in 0..v.len(){
             for j in 0..v[i].len(){
                 vplusw[i][j]=u8::wrapping_add(v[i][j],w[i][j]);
@@ -275,8 +316,8 @@ mod fv_scalar_tests {
         let pt_actual = parallelfv.parallel_deserialize_decrypt(&ctv_wbytes);
 
         let mut vminuw = vec![ vec![0;parallelfv.scheme.n ],
-                        vec![0;parallelfv.scheme.n ],
-                        vec![0;parallelfv.scheme.n ]];
+                               vec![0;parallelfv.scheme.n ],
+                               vec![0;parallelfv.scheme.n ]];
         for i in 0..v.len(){
             for j in 0..v[i].len(){
                 vminuw[i][j]=u8::wrapping_sub(v[i][j],w[i][j]);
@@ -303,8 +344,8 @@ mod fv_scalar_tests {
         let pt_actual = parallelfv.parallel_deserialize_decrypt(&ctv_wbytes);
 
         let mut vplusw = vec![ vec![0;parallelfv.scheme.n ],
-                        vec![0;parallelfv.scheme.n ],
-                        vec![0;parallelfv.scheme.n ]];
+                               vec![0;parallelfv.scheme.n ],
+                               vec![0;parallelfv.scheme.n ]];
         for i in 0..v.len(){
             for j in 0..v[i].len(){
                 vplusw[i][j]=u8::wrapping_add(v[i][j],w[i][j]);
