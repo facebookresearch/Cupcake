@@ -8,16 +8,13 @@ pub use std::sync::Arc;
 use bencher::Bencher;
 use cupcake::traits::*;
 
-
 fn encrypt_sk(bench: &mut Bencher) {
     let fv = cupcake::default();
 
     let sk = fv.generate_key();
 
-    let mut v = vec![0; fv.n];
-    for i in 0..fv.n {
-        v[i] = i as u8;
-    }
+    let v = (0..fv.n).map(|i| i as u8).collect::<Vec<u8>>();
+
     bench.iter(|| {
         let _ = fv.encrypt_sk(&v, &sk);
     })

@@ -22,7 +22,6 @@ pub fn mul_low_word(a: u64, b: u64) -> u64 {
 mod tests {
   use super::*;
 
-
   #[test]
   fn test_mul_high_word(){
     assert_eq!(mul_high_word(1,1), 0);

@@ -426,10 +426,6 @@ where
         let e1 = randutils::sample_gaussian_poly(self.context.clone(), self.stdev);
         let e2 = randutils::sample_gaussian_poly(self.context.clone(), self.stdev);
 
-        // let mut u  = RqPoly::new(self.context.clone()); 
-        // let e1 = RqPoly::new(self.context.clone()); 
-        // let e2 = RqPoly::new(self.context.clone()); 
-
         if self.context.is_ntt_enabled {
             u.forward_transform();
         }

@@ -144,8 +144,6 @@ impl ArithOperators for Scalar{
     }
 }
 
-
-
 // Trait implementation
 impl ArithUtils<Scalar> for Scalar {
     fn new_modulus(q: u64) -> Scalar {

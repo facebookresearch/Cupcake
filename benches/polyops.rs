@@ -72,5 +72,4 @@ benchmark_group!(
     scalar_intt,
 );
 
-
 benchmark_main!(polyops);

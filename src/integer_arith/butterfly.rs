@@ -25,7 +25,6 @@ pub fn butterfly<T>(X: &mut T, Y: &mut T, W: &T, q: &T) where T: ArithUtils<T>{
 // 0 <= X, Y < 4q => (0 <= X', Y' < 4q)
 #[allow(non_snake_case)]
 pub fn lazy_butterfly<T>(X: &mut T, Y: &mut T, W: u64, Wprime: u64, q: &T, twoq: u64) where T: SuperTrait<T>{
-    // let twoq = 0; 
     let mut xx = X.rep(); 
     if xx > twoq{
         xx -= twoq; 
@@ -101,7 +100,6 @@ mod tests {
       inverse_butterfly(&mut X, &mut Y, &W, &q);
       [X.into(), Y.into()]
     }
-
 
     fn lazy_butterfly_for_test(arr: [u64;4]) -> [u64; 2] {
       let mut X:Scalar = Scalar::from(arr[0]);
