@@ -3,11 +3,12 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 pub mod scalar;
+pub mod butterfly;
+pub mod util;
 
 #[cfg(feature = "bigint")]
 pub mod bigint;
 
-use rand::StdRng;
 /// The trait for utility functions related to scalar-like types.
 pub trait ArithUtils<T> {
 
@@ -21,7 +22,7 @@ pub trait ArithUtils<T> {
     // sample a value in [0, bound-1]
     fn sample_blw(bound: &T) -> T;
 
-    fn sample_below_from_rng(bound: &T, rng: &mut StdRng) -> T;
+    fn sample_below_from_rng(bound: &T, rng: &mut dyn Rng) -> T;
 
     fn one() -> T {
         Self::from_u32_raw(1u32)
@@ -53,3 +54,15 @@ pub trait ArithUtils<T> {
     fn from_u64_raw(a: u64) -> T;
     fn to_u64(a: &T) -> u64;
 }
+
+pub trait ArithOperators{
+    fn add_u64(&mut self, a: u64);
+
+    fn sub_u64(&mut self, a: u64);
+
+    fn rep(&self) -> u64;
+}
+
+pub trait SuperTrait<T>: ArithOperators + ArithUtils<T> + Clone + From<u64> + From<u32> + PartialEq{}
+
+pub trait Rng: rand::CryptoRng + rand::RngCore {}

@@ -170,13 +170,21 @@
 
 
 pub mod integer_arith;
+pub mod polyarith;
+#[cfg(feature = "bench")]
+pub mod rqpoly;
+#[cfg(not(feature = "bench"))]
 mod rqpoly;
 pub mod traits;
 mod serialize;
 mod utils;
+#[cfg(feature = "bench")]
+pub mod randutils;
+#[cfg(not(feature = "bench"))]
+mod randutils;
 
 use integer_arith::scalar::Scalar;
-use integer_arith::ArithUtils;
+use integer_arith::{SuperTrait, ArithUtils};
 use traits::*;
 use std::sync::Arc;
 
@@ -192,7 +200,7 @@ pub type DefaultShemeType = FV<Scalar>;
 
 /// SecretKey type
 pub struct SecretKey<T>(RqPoly<T>);
-use rqpoly::{FiniteRingElt, RqPoly, RqPolyContext, NTT};
+use rqpoly::{FiniteRingElt, RqPoly, RqPolyContext};
 
 pub fn default() -> DefaultShemeType {
     FV::<Scalar>::default_2048()
@@ -252,7 +260,7 @@ where
     // add a plaintext into a FVCiphertext.
     fn add_plain_inplace(&self, ct: &mut FVCiphertext<T>, pt: &FVPlaintext<T>) {
         for (ct_coeff, pt_coeff) in ct.1.coeffs.iter_mut().zip(pt.iter()) {
-            let temp = T::mul(&pt_coeff, &self.delta);
+            let temp = T::mul(pt_coeff, &self.delta);
             *ct_coeff = T::add_mod(ct_coeff, &temp, &self.q);
         }
     }
@@ -277,7 +285,7 @@ where
 impl<T> AdditiveHomomorphicScheme<FVCiphertext<T>, SecretKey<T>> for FV<T>
 where
     RqPoly<T>: FiniteRingElt,
-    T: Clone + ArithUtils<T> + PartialEq +  From<u32>,
+    T: SuperTrait<T>,
 {
     fn add_inplace(&self, ct1: &mut FVCiphertext<T>, ct2: &FVCiphertext<T>) {
         ct1.0.add_inplace(&ct2.0);
@@ -292,7 +300,7 @@ where
 
         // add large noise poly for noise flooding.
         let elarge =
-            rqpoly::randutils::sample_gaussian_poly(self.context.clone(), self.flooding_stdev);
+            randutils::sample_gaussian_poly(self.context.clone(), self.flooding_stdev);
         ct.1.add_inplace(&elarge);
     }
 }
@@ -300,7 +308,7 @@ where
 // constructor and random poly sampling
 impl<T> FV<T>
 where
-    T: ArithUtils<T> + Clone + PartialEq + Serializable + From<u32>,
+    T: SuperTrait<T>+ PartialEq + Serializable,
     RqPoly<T>: FiniteRingElt + NTT<T>,
 {
     pub fn new(n: usize, q: &T) -> Self {
@@ -322,8 +330,8 @@ where
             n,
             t: t.clone(),
             flooding_stdev: 2f64.powi(40),
-            delta: T::div(q, &t), // &q/t,
-            qdivtwo: T::div(q, &T::from(2)), // &q/2,
+            delta: T::div(q, t), // &q/t,
+            qdivtwo: T::div(q, &T::from(2_u32)), // &q/2,
             q: q.clone(),
             stdev: 3.2,
             context,
@@ -387,10 +395,10 @@ impl FV<BigInt> {
 impl<T> KeyGeneration<FVCiphertext<T>,  SecretKey<T>> for FV<T>
 where
     RqPoly<T>: FiniteRingElt,
-    T: Clone + ArithUtils<T> + PartialEq  + From<u32>,
+    T: SuperTrait<T>,
 {
     fn generate_key(&self) -> SecretKey<T> {
-        let mut skpoly = rqpoly::randutils::sample_ternary_poly(self.context.clone());
+        let mut skpoly = randutils::sample_ternary_poly(self.context.clone());
         if self.context.is_ntt_enabled {
             skpoly.forward_transform();
         }
@@ -411,21 +419,24 @@ where
 impl<T> EncryptionOfZeros<FVCiphertext<T>,  SecretKey<T>> for FV<T>
 where
     RqPoly<T>: FiniteRingElt,
-    T: Clone + ArithUtils<T> + PartialEq  + From<u32>,
+    T: SuperTrait<T>,
 {
     fn encrypt_zero(&self, pk: &FVCiphertext<T>) -> FVCiphertext<T> {
-        let mut u = rqpoly::randutils::sample_ternary_poly_prng(self.context.clone());
-        let e1 = rqpoly::randutils::sample_gaussian_poly(self.context.clone(), self.stdev);
-        let e2 = rqpoly::randutils::sample_gaussian_poly(self.context.clone(), self.stdev);
+        let mut u = randutils::sample_ternary_poly_prng(self.context.clone());
+        let e1 = randutils::sample_gaussian_poly(self.context.clone(), self.stdev);
+        let e2 = randutils::sample_gaussian_poly(self.context.clone(), self.stdev);
 
         if self.context.is_ntt_enabled {
             u.forward_transform();
         }
         // c0 = au + e1
+        // let mut c0 = RqPoly::new(self.context.clone()); 
         let mut c0 = (self.poly_multiplier)(&pk.0, &u);
         c0.add_inplace(&e1);
 
         // c1 = bu + e2
+        // let mut c1 = RqPoly::new(self.context.clone()); 
+
         let mut c1 = (self.poly_multiplier)(&pk.1, &u);
         c1.add_inplace(&e2);
 
@@ -433,8 +444,8 @@ where
     }
 
     fn encrypt_zero_sk(&self, sk: &SecretKey<T>) -> FVCiphertext<T> {
-        let e = rqpoly::randutils::sample_gaussian_poly(self.context.clone(), self.stdev);
-        let a = rqpoly::randutils::sample_uniform_poly(self.context.clone());
+        let e = randutils::sample_gaussian_poly(self.context.clone(), self.stdev);
+        let a = randutils::sample_uniform_poly(self.context.clone());
         let mut b = (self.poly_multiplier)(&a, &sk.0);
         b.add_inplace(&e);
         (a, b)
@@ -444,7 +455,7 @@ where
 impl<T> PKEncryption<FVCiphertext<T>, FVPlaintext<T>, SecretKey<T>> for FV<T>
 where
     RqPoly<T>: FiniteRingElt,
-    T: Clone + ArithUtils<T> + PartialEq  + From<u32>,
+    T: SuperTrait<T>,
 {
     fn encrypt(&self, pt: &FVPlaintext<T>, pk: &FVCiphertext<T>) -> FVCiphertext<T> {
         // use public key to encrypt
@@ -453,7 +464,7 @@ where
         // c1 = bu+e2 + Delta*m
         let iter = c1.coeffs.iter_mut().zip(pt.iter());
         for (x, y) in iter {
-            let temp = T::mul(&y, &self.delta);
+            let temp = T::mul(y, &self.delta);
             *x = T::add_mod(x, &temp, &self.q);
         }
         (c0, c1)
@@ -463,7 +474,7 @@ where
 impl<T> PKEncryption<FVCiphertext<T>, DefaultFVPlaintext, SecretKey<T>> for FV<T>
 where
     RqPoly<T>: FiniteRingElt,
-    T: Clone + ArithUtils<T> + PartialEq + From<u32>,
+    T: SuperTrait<T>,
 {
     fn encrypt(&self, pt: &DefaultFVPlaintext, pk: &FVCiphertext<T>) -> FVCiphertext<T> {
         let pt1 = self.convert_pt_u8_to_scalar(pt);
@@ -474,7 +485,7 @@ where
 impl<T> SKEncryption<FVCiphertext<T>, DefaultFVPlaintext, SecretKey<T>> for FV<T>
 where
     RqPoly<T>: FiniteRingElt,
-    T: Clone + ArithUtils<T> + PartialEq + From<u32>,
+    T: SuperTrait<T>,
 {
     fn encrypt_sk(&self, pt: &DefaultFVPlaintext, sk: &SecretKey<T>) -> FVCiphertext<T>
         {
@@ -492,11 +503,12 @@ where
 impl<T> SKEncryption<FVCiphertext<T>, FVPlaintext<T>, SecretKey<T>> for FV<T>
 where
     RqPoly<T>: FiniteRingElt,
-    T: Clone + ArithUtils<T> + PartialEq + From<u32>,
+    T: SuperTrait<T>,
 {
     fn encrypt_sk(&self, pt: &FVPlaintext<T>, sk: &SecretKey<T>) -> FVCiphertext<T> {
-        let e = rqpoly::randutils::sample_gaussian_poly(self.context.clone(), self.stdev);
-        let a = rqpoly::randutils::sample_uniform_poly(self.context.clone());
+        let e = randutils::sample_gaussian_poly(self.context.clone(), self.stdev);
+        let a = randutils::sample_uniform_poly(self.context.clone());
+
 
         let mut b = (self.poly_multiplier)(&a, &sk.0);
         b.add_inplace(&e);
@@ -504,7 +516,7 @@ where
         // add scaled plaintext to
         let iter = b.coeffs.iter_mut().zip(pt.iter());
         for (x, y) in iter {
-            let temp = T::mul(&y, &self.delta);
+            let temp = T::mul(y, &self.delta);
             *x = T::add_mod(x, &temp, &self.q);
         }
         (a, b)
@@ -515,20 +527,22 @@ where
         let mut phase = ct.1.clone();
         phase.sub_inplace(&temp1);
         // then, extract value from phase.
-        let mut c: Vec<T> = vec![];
-        for x in phase.coeffs {
-            // let mut tmp = x << 8;  // x * t, need to make sure there's no overflow.
-            let mut tmp = T::mul(&x, &self.t);
-            // tmp += &self.qdivtwo;
-            tmp = T::add(&tmp, &self.qdivtwo);
-            // tmp /= &self.q;
-            tmp = T::div(&tmp, &self.q);
-            // modulo t.
-            tmp = T::modulus(&tmp, &self.t);
+        let tt: u64 = self.t.rep(); 
+        let qq: u64 = self.q.rep(); 
+        let qdivtwo = qq / 2; 
 
-            c.push(tmp);
-        }
-        c
+        let my_closure = |elm: &T| -> T{
+            let mut tmp:u64 = elm.rep(); 
+            tmp *= tt;
+            tmp += qdivtwo;  
+            tmp /= qq; 
+            tmp %= tt; 
+            T::from(tmp)
+        }; 
+
+        return phase.coeffs.iter()
+        .map(my_closure)
+        .collect();
     }
 }
 

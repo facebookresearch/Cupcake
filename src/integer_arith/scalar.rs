@@ -2,12 +2,16 @@
 //
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
-use crate::integer_arith::ArithUtils;
+use crate::integer_arith::{ArithOperators, ArithUtils, SuperTrait};
 use modinverse::modinverse;
-use rand::rngs::StdRng;
-use rand::FromEntropy;
-use rand::RngCore;
+use rand::rngs::{StdRng,ThreadRng};
+use rand::{FromEntropy}; 
+use super::Rng; 
+use ::std::ops;
 pub use std::sync::Arc;
+
+impl Rng for StdRng {}
+impl Rng for ThreadRng {}
 
 /// The ScalarContext class contains useful auxilliary information for fast modular reduction against a Scalar instance.
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -62,12 +66,16 @@ impl Scalar {
     }
 }
 
+/// Trait implementations
+impl SuperTrait<Scalar> for Scalar {}
+
 impl PartialEq for Scalar {
     fn eq(&self, other: &Self) -> bool {
         self.rep == other.rep
     }
 }
 
+// Conversions
 impl From<u32> for Scalar {
     fn from(item: u32) -> Self {
         Scalar {  context: None, rep: item as u64, bit_count: 0 }
@@ -80,6 +88,63 @@ impl From<u64> for Scalar {
     }
 }
 
+impl From<Scalar> for u64{
+    fn from(item: Scalar) -> u64 {
+        item.rep
+    }
+}
+
+// Operators
+impl ops::Add<&Scalar> for Scalar {
+    type Output = Scalar;
+    fn add(self, v: &Scalar) -> Scalar {
+        Scalar::new(self.rep + v.rep)
+    }
+}
+
+impl ops::Add<Scalar> for Scalar {
+    type Output = Scalar;
+    fn add(self, v: Scalar) -> Scalar {
+        self + &v
+    }
+}
+
+impl ops::Sub<&Scalar> for Scalar {
+    type Output = Scalar;
+    fn sub(self, v: &Scalar) -> Scalar {
+         Scalar::new(self.rep - v.rep)
+    }
+}
+
+impl ops::Sub<Scalar> for Scalar {
+    type Output = Scalar;
+    fn sub(self, v: Scalar) -> Scalar {
+        self - &v
+    }
+}
+
+impl ops::Mul<u64> for Scalar {
+    type Output = Scalar;
+    fn mul(self, v: u64) -> Scalar {
+        Scalar::new(self.rep * v)
+    }
+}
+
+impl ArithOperators for Scalar{
+    fn add_u64(&mut self, a: u64){
+        self.rep += a;
+    }
+
+    fn sub_u64(&mut self, a: u64){
+        self.rep -= a;
+    }
+
+    fn rep(&self) -> u64{
+        self.rep
+    }
+}
+
+// Trait implementation
 impl ArithUtils<Scalar> for Scalar {
     fn new_modulus(q: u64) -> Scalar {
         Scalar {
@@ -158,17 +223,15 @@ impl ArithUtils<Scalar> for Scalar {
     }
 
     // sample below using a given rng.
-    fn sample_below_from_rng(upper_bound: &Scalar, rng: &mut StdRng) -> Self {
-        loop {
-            let n = Self::_sample_form_rng(upper_bound.bit_count, rng);
-            if n < upper_bound.rep {
-                return Scalar::new(n);
-            }
-        }
+    fn sample_below_from_rng(upper_bound: &Scalar, rng: &mut dyn Rng) -> Self {
+        upper_bound.sample(rng)
     }
 
     fn modulus(a: &Scalar, q: &Scalar) -> Scalar {
-        Scalar::new(a.rep % q.rep)
+        match &q.context{
+            Some(context) => {Scalar::from(Scalar::_barret_reduce((a.rep(), 0), context.barrett_ratio, q.rep()))}
+            None => Scalar::new(a.rep % q.rep)
+        }
     }
 
     fn mul(a: &Scalar, b: &Scalar) -> Scalar {
@@ -202,7 +265,17 @@ impl Scalar {
         res
     }
 
-    fn _sample_form_rng(bit_size: usize, rng: &mut StdRng) -> u64 {
+    fn sample(&self, rng: &mut dyn Rng) -> Scalar {
+        let max_multiple = self.rep() * (u64::MAX / self.rep() ); 
+        loop{
+            let a = rng.next_u64(); 
+            if a < max_multiple {
+                return Scalar::modulus(&Scalar::from(a), self);
+            }
+        }
+    }
+
+    fn _sample_from_rng(bit_size: usize, rng: &mut dyn Rng) -> u64 {
         let bytes = (bit_size - 1) / 8 + 1;
         let mut buf: Vec<u8> = vec![0; bytes];
         rng.fill_bytes(&mut buf);
@@ -219,7 +292,7 @@ impl Scalar {
 
     fn _sample(bit_size: usize) -> u64 {
         let mut rng = StdRng::from_entropy();
-        Self::_sample_form_rng(bit_size, &mut rng)
+        Self::_sample_from_rng(bit_size, &mut rng)
     }
 
     fn _sub_mod(a: &Scalar, b: &Scalar, q: u64) -> Self {
@@ -251,9 +324,10 @@ impl Scalar {
         // compute w = a*ratio >> 128.
 
         // start with lw(a1r1)
-        // let mut w= Scalar::multiply_u64(a.1, ratio.1).0;
-        let mut w = a.1.wrapping_mul(ratio.1);
-
+        let mut w = 0; 
+        if a.1 != 0{
+            w = a.1.wrapping_mul(ratio.1);
+        }
         let a0r0 = Scalar::_multiply_u64(a.0, ratio.0);
 
         let a0r1 = Scalar::_multiply_u64(a.0, ratio.1);
@@ -266,11 +340,13 @@ impl Scalar {
         w += carry as u64;
 
         // Round2
-        let a1r0 = Scalar::_multiply_u64(a.1, ratio.0);
-        w += a1r0.1;
-        // final carry
-        let (_, carry2) = Scalar::_add_u64(a1r0.0, tmp);
-        w += carry2 as u64;
+        if a.1 != 0{
+            let a1r0 = Scalar::_multiply_u64(a.1, ratio.0);
+            w += a1r0.1;
+            // final carry
+            let (_, carry2) = Scalar::_add_u64(a1r0.0, tmp);
+            w += carry2 as u64;
+        }
 
         // low = w*q mod 2^64.
         // let low = Scalar::multiply_u64(w, q).0;
@@ -337,6 +413,17 @@ mod tests {
         let q_scalar = Scalar::new_modulus(q);
         for _ in 0..10 {
             assert!(Scalar::sample_blw(&q_scalar).rep < q);
+        }
+    }
+
+    #[test]
+    fn test_sample_below_prng() {
+        use rand::{thread_rng};
+        let q: u64 = 18014398492704769;
+        let q_scalar = Scalar::new_modulus(q);
+        let mut rng = thread_rng(); 
+        for _ in 0..10 {
+            assert!(Scalar::sample_below_from_rng(&q_scalar, &mut rng).rep < q);
         }
     }
     #[test]
@@ -426,5 +513,13 @@ mod tests {
         let c = Scalar::_barret_multiply(&a, &b, ratio, q);
 
         assert_eq!(c, 6);
+    }
+
+    #[test]
+    fn test_operator_add(){
+        let a = Scalar::new(123);
+        let b = Scalar::new(123);
+        let c = a + &b;
+        assert_eq!(u64::from(c), 246u64);
     }
 }

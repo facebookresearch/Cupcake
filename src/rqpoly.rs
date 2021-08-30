@@ -2,35 +2,51 @@
 //
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
-use crate::integer_arith::ArithUtils;
+use crate::integer_arith::{SuperTrait, ArithUtils};
+use crate::polyarith::lazy_ntt::{lazy_ntt_u64, lazy_inverse_ntt_u64};
+use crate::integer_arith::util::compute_harvey_ratio; 
 use crate::utils::reverse_bits_perm;
 use std::sync::Arc;
+use crate::traits::*; 
 
 /// Holds the context information for RqPolys, including degree n, modulus q, and optionally precomputed
 /// roots of unity for NTT purposes.
 #[derive(Debug)]
-pub(crate) struct RqPolyContext<T> {
+pub struct RqPolyContext<T> {
     pub n: usize,
     pub q: T,
     pub is_ntt_enabled: bool,
     pub roots: Vec<T>,
     pub invroots: Vec<T>,
+    pub scaled_roots: Vec<T>, // for use in lazy ntt
+    pub scaled_invroots: Vec<T>, // for use in lazy inverse ntt
 }
 
 /// Polynomials in Rq = Zq[x]/(x^n + 1).
 #[derive(Clone, Debug)]
 pub struct RqPoly<T> {
-    context: Option<Arc<RqPolyContext<T>>>,
+    pub(crate) context: Option<Arc<RqPolyContext<T>>>,
     pub coeffs: Vec<T>,
     pub is_ntt_form: bool,
 }
 
 impl<T> RqPoly<T> where T:Clone{
-    pub fn new(coeffs: &Vec<T>, is_ntt_form:bool) -> Self{
+    pub fn new_without_context(coeffs: &[T], is_ntt_form:bool) -> Self{
         RqPoly{
             context: None,
             coeffs: coeffs.to_vec(),
             is_ntt_form,
+        }
+    }
+}
+
+impl<T> RqPoly<T> where T:Clone + ArithUtils<T>{
+    pub fn new(context: Arc<RqPolyContext<T>>) -> Self{
+        let n = context.n; 
+        RqPoly{
+            context: Some(context), 
+            coeffs: vec![T::zero(); n], 
+            is_ntt_form: false
         }
     }
 
@@ -52,21 +68,6 @@ impl<T> PartialEq for RqPoly<T> where T: PartialEq {
     }
 }
 
-/// Number-theoretic transform (NTT) and fast polynomial multiplication based on NTT.
-pub trait NTT<T>: Clone {
-    fn is_ntt_form(&self) -> bool;
-
-    fn set_ntt_form(&mut self, value: bool);
-
-    fn forward_transform(&mut self);
-
-    fn inverse_transform(&mut self);
-
-    fn coeffwise_multiply(&self, other: &Self) -> Self;
-
-    fn multiply_fast(&self, other: &Self) -> Self;
-}
-
 /// Arithmetics on general ring elements.
 pub trait FiniteRingElt {
     fn add_inplace(&mut self, other: &Self);
@@ -80,7 +81,7 @@ pub trait FiniteRingElt {
 
 impl<T> RqPolyContext<T>
 where
-    T: ArithUtils<T> + PartialEq + Clone + From<u32>,
+    T: SuperTrait<T>,
 {
     pub fn new(n: usize, q: &T) -> Self {
         let mut a = RqPolyContext {
@@ -89,9 +90,27 @@ where
             is_ntt_enabled: false,
             invroots: vec![],
             roots: vec![],
+            scaled_roots: vec![], 
+            scaled_invroots: vec![], 
         };
         a.compute_roots();
+        a.compute_scaled_roots();
+
         a
+    }
+
+    fn compute_scaled_roots(&mut self){
+        if !self.is_ntt_enabled{
+            return; 
+        }
+        // compute scaled roots as wiprime = wi
+        for i in 0..self.n {
+            self.scaled_roots.push(T::from(compute_harvey_ratio(self.roots[i].rep(), self.q.rep()))); 
+        }
+
+        for i in 0..self.n {
+            self.scaled_invroots.push(T::from(compute_harvey_ratio(self.invroots[i].rep(), self.q.rep()))); 
+        }
     }
 
     fn compute_roots(&mut self) {
@@ -102,24 +121,22 @@ where
             self.is_ntt_enabled = false;
             return;
         }
-        self.is_ntt_enabled = true;
         let phi = root.unwrap();
-
+        
         let mut s = T::one();
         for _ in 0..self.n {
             roots.push(s.clone());
             s = T::mul_mod(&s, &phi, &self.q);
         }
-        // now bit reverse a vector
-
         reverse_bits_perm(&mut roots);
         self.roots = roots;
-
+        
         let mut invroots: Vec<T> = vec![];
         for x in self.roots.iter() {
             invroots.push(T::inv_mod(x, &self.q));
         }
         self.invroots = invroots;
+        self.is_ntt_enabled = true;
     }
 
     pub fn find_root(&self) -> Option<T> {
@@ -147,10 +164,71 @@ where
     }
 }
 
-// NTT implementation
+impl<T> RqPoly<T>
+where
+    T: SuperTrait<T>
+{
+    fn lazy_ntt(&mut self)
+    {
+        let context = self.context.as_ref().unwrap();
+        if self.is_ntt_form {
+            panic!("is already in ntt");
+        }
+        let q = context.q.rep();
+
+        let mut coeffs_u64: Vec<u64> = self.coeffs.iter()
+        .map(|elm| elm.rep())
+        .collect();
+
+        let roots_u64: Vec<u64> = context.roots.iter()
+        .map(|elm| elm.rep())
+        .collect();
+        let scaledroots_u64: Vec<u64> = context.scaled_roots.iter()
+        .map(|elm| elm.rep())
+        .collect();
+
+        lazy_ntt_u64(&mut coeffs_u64, &roots_u64, &scaledroots_u64, q); 
+
+        for (coeff, coeff_u64) in self.coeffs.iter_mut().zip(coeffs_u64.iter()){
+            *coeff = T::modulus(&T::from(*coeff_u64), &context.q); 
+        }
+        self.set_ntt_form(true);
+    }
+
+    fn lazy_inverse_ntt(&mut self){
+        let context = self.context.as_ref().unwrap();
+        if !self.is_ntt_form {
+            panic!("is already not in ntt");
+        }
+        let n = context.n;
+        let q = context.q.clone();
+        let ninv = T::inv_mod(&T::from_u32(n as u32, &q), &q);
+
+        let mut coeffs_u64: Vec<u64> = self.coeffs.iter()
+        .map(|elm| elm.rep())
+        .collect();
+
+        let invroots_u64: Vec<u64> = context.invroots.iter()
+        .map(|elm| elm.rep())
+        .collect();
+
+        let scaled_invroots_u64: Vec<u64> = context.scaled_invroots.iter()
+        .map(|elm| elm.rep())
+        .collect();
+
+        lazy_inverse_ntt_u64(&mut coeffs_u64, &invroots_u64, &scaled_invroots_u64, q.rep()); 
+
+        for (coeff, coeff_u64) in self.coeffs.iter_mut().zip(coeffs_u64.iter()){
+            *coeff = T::mul_mod(&ninv, &T::from(*coeff_u64), &context.q); 
+        }
+        self.set_ntt_form(false);
+    }
+}
+
+// NTT implementation(lazy version)
 impl<T> NTT<T> for RqPoly<T>
 where
-    T: ArithUtils<T> + Clone,
+    T: SuperTrait<T>
 {
     fn is_ntt_form(&self) -> bool {
         self.is_ntt_form
@@ -161,67 +239,29 @@ where
     }
 
     fn forward_transform(&mut self) {
-        let context = self.context.as_ref().unwrap();
-        if self.is_ntt_form {
-            panic!("is already in ntt");
-        }
-
-        let n = context.n;
-        let q = context.q.clone();
-
-        let mut t = n;
-        let mut m = 1;
-        while m < n {
-            t >>= 1;
-            for i in 0..m {
-                let j1 = 2 * i * t;
-                let j2 = j1 + t - 1;
-                let phi = &context.roots[m + i];
-                for j in j1..j2 + 1 {
-                    let x = T::mul_mod(&self.coeffs[j + t], &phi, &q);
-                    self.coeffs[j + t] = T::sub_mod(&self.coeffs[j], &x, &q);
-                    self.coeffs[j] = T::add_mod(&self.coeffs[j], &x, &q);
-                }
-            }
-            m <<= 1;
-        }
-        self.set_ntt_form(true);
+        self.lazy_ntt()
     }
 
     fn inverse_transform(&mut self) {
-        let context = self.context.as_ref().unwrap();
-        if !self.is_ntt_form {
-            panic!("is already not in ntt");
-        }
-        let n = context.n;
-        let q = context.q.clone();
+        self.lazy_inverse_ntt()
+    }
+}
 
-        let mut t = 1;
-        let mut m = n;
-        let ninv = T::inv_mod(&T::from_u32(n as u32, &q), &q);
-        while m > 1 {
-            let mut j1 = 0;
-            let h = m >> 1;
-            for i in 0..h {
-                let j2 = j1 + t - 1;
-                let s = &context.invroots[h + i];
-                for j in j1..j2 + 1 {
-                    let u = self.coeffs[j].clone();
-                    let v = self.coeffs[j + t].clone();
-                    self.coeffs[j] = T::add_mod(&u, &v, &q);
+impl<T> FastPolyMultiply<T> for RqPoly<T>
+where T: SuperTrait<T>{
+    fn multiply_fast(&self, other: &Self) -> Self {
+        let mut a: Self = self.clone();
+        let mut b = other.clone();
 
-                    let tmp = T::sub_mod(&u, &v, &q);
-                    self.coeffs[j + t] = T::mul_mod(&tmp, &s, &q);
-                }
-                j1 += 2 * t;
-            }
-            t <<= 1;
-            m >>= 1;
+        if !a.is_ntt_form {
+            a.forward_transform();
         }
-        for x in 0..n {
-            self.coeffs[x] = T::mul_mod(&ninv, &self.coeffs[x], &q);
+        if !b.is_ntt_form {
+            b.forward_transform();
         }
-        self.set_ntt_form(false);
+        let mut c = a.coeffwise_multiply(&b);
+        c.inverse_transform();
+        c
     }
 
     fn coeffwise_multiply(&self, other: &Self) -> Self {
@@ -237,22 +277,8 @@ where
         }
         c
     }
-
-    fn multiply_fast(&self, other: &Self) -> Self {
-        let mut a: Self = self.clone();
-        let mut b = other.clone();
-
-        if !a.is_ntt_form {
-            a.forward_transform();
-        }
-        if !b.is_ntt_form {
-            b.forward_transform();
-        }
-        let mut c = a.coeffwise_multiply(&b);
-        c.inverse_transform();
-        c
-    }
 }
+
 
 impl<T> FiniteRingElt for RqPoly<T>
 where
@@ -310,100 +336,6 @@ where
     }
 }
 
-/// Utility functions for generating random polynomials.
-pub(crate) mod randutils {
-    use rand::distributions::{Distribution, Normal};
-    use rand::rngs::{OsRng, StdRng};
-    use rand::FromEntropy;
-    use rand::{thread_rng, Rng};
-    use super::*;
-
-    pub(crate) fn sample_ternary_poly<T>(context: Arc<RqPolyContext<T>>) -> RqPoly<T>
-    where
-        T: ArithUtils<T> + From<u32>,
-    {
-        let mut rng = OsRng::new().unwrap();
-        let mut c = vec![];
-        for _x in 0..context.n {
-            let t = rng.gen_range(-1i32, 2i32);
-            if t >= 0 {
-                c.push(T::from(t as u32));
-            } else {
-                c.push(T::sub(&context.q, &T::one()));
-            }
-        }
-        RqPoly {
-            coeffs: c,
-            is_ntt_form: false,
-            context: Some(context.clone()),
-        }
-    }
-
-    pub(crate) fn sample_ternary_poly_prng<T>(context: Arc<RqPolyContext<T>>) -> RqPoly<T>
-    where
-        T: ArithUtils<T> + From<u32>,
-    {
-        let mut rng = StdRng::from_entropy();
-        let mut c = vec![];
-        for _x in 0..context.n {
-            let t = rng.gen_range(-1i32, 2i32);
-            if t >= 0 {
-                c.push(T::from(t as u32));
-            } else {
-                c.push(T::sub(&context.q, &T::one()));
-            }
-        }
-        RqPoly {
-            coeffs: c,
-            is_ntt_form: false,
-            context: Some(context),
-        }
-    }
-
-    /// Sample a polynomial with Gaussian coefficients in the ring Rq.
-    pub(crate) fn sample_gaussian_poly<T>(context: Arc<RqPolyContext<T>>, stdev: f64) -> RqPoly<T>
-    where
-        T: ArithUtils<T>,
-    {
-        let mut c = vec![];
-        let normal = Normal::new(0.0, stdev);
-        let mut rng = thread_rng();
-        for _ in 0..context.n {
-            let tmp = normal.sample(&mut rng);
-
-            // branch on sign
-            if tmp >= 0.0 {
-                c.push(T::from_u64_raw(tmp as u64));
-            } else {
-                let neg = T::from_u64_raw(-tmp as u64);
-                c.push(T::sub(&context.q, &neg));
-            }
-        }
-        RqPoly {
-            coeffs: c,
-            is_ntt_form: false,
-            context: Some(context),
-        }
-    }
-
-    /// Sample a uniform polynomial in the ring Rq.
-    pub(crate) fn sample_uniform_poly<T>(context: Arc<RqPolyContext<T>>) -> RqPoly<T>
-    where
-        T: ArithUtils<T> + From<u32>,
-    {
-        let mut c = vec![];
-        let mut rng = StdRng::from_entropy();
-        for _x in 0..context.n {
-            c.push(T::sample_below_from_rng(&context.q, &mut rng));
-        }
-        RqPoly {
-            coeffs: c,
-            is_ntt_form: false,
-            context: Some(context.clone()),
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -447,7 +379,7 @@ mod tests {
         let q = Scalar::new_modulus(18014398492704769u64);
         let context = RqPolyContext::new(2048, &q);
         let arc = Arc::new(context);
-        let a = randutils::sample_uniform_poly(arc.clone());
+        let a = crate::randutils::sample_uniform_poly(arc.clone());
         let mut aa = a.clone();
         aa.forward_transform();
         aa.inverse_transform();
@@ -480,8 +412,8 @@ mod tests {
         let context = RqPolyContext::new(2048, &q);
         let arc = Arc::new(context);
 
-        let a = randutils::sample_uniform_poly(arc.clone());
-        let b = randutils::sample_uniform_poly(arc.clone());
+        let a = crate::randutils::sample_uniform_poly(arc.clone());
+        let b = crate::randutils::sample_uniform_poly(arc.clone());
         let c = a.multiply(&b);
         let c1 = a.multiply_fast(&b);
         assert_eq!(c.coeffs, c1.coeffs);
@@ -491,5 +423,35 @@ mod tests {
     fn test_find_root_scalar(){
         let context2 = RqPolyContext::new(4, &Scalar::new_modulus(12289));
         assert_eq!(context2.find_root().unwrap(), Scalar::from_u64_raw(8246u64));
+    }
+
+    #[test]
+    fn test_lazy_ntt(){
+        let q = Scalar::new_modulus(18014398492704769u64);
+        let context = RqPolyContext::new(4, &q);
+        let arc = Arc::new(context);
+        let mut a = crate::randutils::sample_uniform_poly(arc.clone());
+        let mut aa = a.clone();
+
+        aa.forward_transform();
+        a.lazy_ntt(); 
+
+        // assert 
+        assert_eq!(aa.coeffs, a.coeffs); 
+    }
+
+    #[test]
+    fn test_lazy_inverse_ntt(){
+        let q = Scalar::new_modulus(18014398492704769u64);
+        let context = RqPolyContext::new(4, &q);
+        let arc = Arc::new(context);
+        let mut a = crate::randutils::sample_uniform_poly(arc.clone());
+        a.set_ntt_form(true);
+        let mut aa = a.clone();
+        aa.inverse_transform();
+        a.lazy_inverse_ntt(); 
+
+        // assert 
+        assert_eq!(aa.coeffs, a.coeffs); 
     }
 }

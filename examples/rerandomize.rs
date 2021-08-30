@@ -2,7 +2,7 @@
 //
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
-use cupcake::traits::{AdditiveHomomorphicScheme, PKEncryption, SKEncryption,  KeyGeneration};
+use cupcake::traits::{AdditiveHomomorphicScheme, KeyGeneration, PKEncryption, SKEncryption};
 
 fn smartprint<T: std::fmt::Debug>(v: &Vec<T>) {
     println!("[{:?}, {:?}, ..., {:?}]", v[0], v[1], v[v.len() - 1]);

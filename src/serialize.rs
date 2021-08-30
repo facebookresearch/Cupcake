@@ -34,11 +34,9 @@ where
   T: Serializable + Clone,
 {
   fn to_bytes(&self) -> std::vec::Vec<u8> {
-    let mut vec: Vec<u8> = Vec::new();
-    // push in the is ntt form.
-    vec.push(self.is_ntt_form as u8);
-    for i in 0..self.coeffs.len() {
-      let mut bytes = self.coeffs[i].to_bytes();
+    let mut vec: Vec<u8> = vec![self.is_ntt_form as u8];
+    for coeff in &self.coeffs {
+      let mut bytes = coeff.to_bytes();
       vec.append(&mut bytes);
     }
     vec
@@ -51,7 +49,7 @@ where
       coeffs.push(T::from_bytes(&bytes[i..i+8].to_vec()));
       i += 8;
     }
-    RqPoly::new(&coeffs, is_ntt_form)
+    RqPoly::new_without_context(&coeffs, is_ntt_form)
   }
 }
 
@@ -89,7 +87,7 @@ mod tests {
     for i in 0..4 {
       coeffs.push(Scalar::from_u64_raw(i));
     }
-    let testpoly = RqPoly::<Scalar>::new(&coeffs, false);
+    let testpoly = RqPoly::<Scalar>::new_without_context(&coeffs, false);
     let bytes = testpoly.to_bytes();
     let deserialized = RqPoly::<Scalar>::from_bytes(&bytes);
     assert_eq!(testpoly, deserialized);
