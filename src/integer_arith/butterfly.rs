@@ -3,7 +3,10 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-use super::{SuperTrait, ArithUtils};
+#[cfg(test)]
+use super::{SuperTrait};
+
+use super::{ArithUtils};
 
 // (X, Y) -> (X+Y, W(X-Y)) mod q 
 #[allow(non_snake_case)]
@@ -24,6 +27,7 @@ pub fn butterfly<T>(X: &mut T, Y: &mut T, W: &T, q: &T) where T: ArithUtils<T>{
 // (X, Y) -> (X+WY, X-WY)
 // 0 <= X, Y < 4q => (0 <= X', Y' < 4q)
 #[allow(non_snake_case)]
+#[cfg(test)]
 pub fn lazy_butterfly<T>(X: &mut T, Y: &mut T, W: u64, Wprime: u64, q: &T, twoq: u64) where T: SuperTrait<T>{
     let mut xx = X.rep(); 
     if xx > twoq{
@@ -37,16 +41,26 @@ pub fn lazy_butterfly<T>(X: &mut T, Y: &mut T, W: u64, Wprime: u64, q: &T, twoq:
     *Y = T::from(xx + twoq - quo); 
 }
 
+#[allow(clippy::many_single_char_names)]
 pub fn lazy_butterfly_u64(mut x: u64, y:u64, w: u64, wprime: u64, q: u64, twoq: u64) -> (u64, u64){
     // let twoq = 0; 
     if x > twoq{
         x -= twoq; 
     }
     let _qq = super::util::mul_high_word(wprime, y);
-    let quo = w.wrapping_mul(y) - _qq.wrapping_mul(q);
+    let wy = w.wrapping_mul(y); 
+    let qqq = _qq.wrapping_mul(q); 
+    let quo; 
+    if wy >= qqq { 
+        quo = wy - qqq; 
+    } 
+    else{
+        quo = u64::MAX - qqq + wy + 1; 
+    }
     (x + quo, x + twoq - quo)
 }
 
+#[allow(clippy::many_single_char_names)]
 pub fn lazy_inverse_butterfly_u64(x: u64, y:u64, w: u64, wprime: u64, q: u64, twoq: u64) -> (u64, u64){
     let mut xx = x+y;
     	
@@ -55,13 +69,22 @@ pub fn lazy_inverse_butterfly_u64(x: u64, y:u64, w: u64, wprime: u64, q: u64, tw
     }
     let t = twoq - y + x; 
     let quo = super::util::mul_high_word(wprime, t); 
-    let yy = w.wrapping_mul(t) - quo.wrapping_mul(q); 
+    let wt = w.wrapping_mul(t); 
+    let qquo = quo.wrapping_mul(q); 
+    let yy; 
+    if wt >= qquo { 
+        yy = wt - qquo; 
+    } 
+    else{
+        yy = u64::MAX - qquo + wt + 1; 
+    }
     (xx, yy)
 }
 
 // (X,Y) -> (X+Y, W(X-Y)) mod q
 // 0 <= X, Y < 2q  ==> 0 <= X', Y' < 2q 
 #[allow(non_snake_case)]
+#[cfg(test)]
 pub(crate) fn lazy_inverse_butterfly<T>(X: &mut T, Y: &mut T, W: u64, Wprime: u64, q: &T) where T: SuperTrait<T>{
     let mut xx = X.rep() + Y.rep(); 
     	

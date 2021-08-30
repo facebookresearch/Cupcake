@@ -3,7 +3,6 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 use crate::integer_arith::{SuperTrait, ArithUtils};
-use crate::integer_arith::butterfly::{inverse_butterfly,butterfly};
 use crate::polyarith::lazy_ntt::{lazy_ntt_u64, lazy_inverse_ntt_u64};
 use crate::integer_arith::util::compute_harvey_ratio; 
 use crate::utils::reverse_bits_perm;

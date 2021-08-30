@@ -4,9 +4,9 @@
 // LICENSE file in the root directory of this source tree.
 #[macro_use]
 extern crate bencher;
-pub use std::sync::Arc;
 use bencher::Bencher;
 use cupcake::traits::*;
+pub use std::sync::Arc;
 
 fn encrypt_sk(bench: &mut Bencher) {
     let fv = cupcake::default();

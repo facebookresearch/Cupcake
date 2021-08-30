@@ -4,10 +4,10 @@
 // LICENSE file in the root directory of this source tree.
 #[macro_use]
 extern crate bencher;
-pub use std::sync::Arc;
 use bencher::Bencher;
+use cupcake::rqpoly::RqPolyContext;
 use cupcake::traits::*;
-use cupcake::rqpoly::{RqPolyContext};
+pub use std::sync::Arc;
 // use cupcake::randutils;
 use cupcake::integer_arith::scalar::Scalar;
 use cupcake::integer_arith::ArithUtils;
@@ -41,7 +41,7 @@ fn sample_uniform(bench: &mut Bencher) {
     let context = Arc::new(RqPolyContext::new(2048, &q));
 
     bench.iter(|| {
-        let _ = randutils::sample_uniform_poly(context.clone()); 
+        let _ = randutils::sample_uniform_poly(context.clone());
     })
 }
 

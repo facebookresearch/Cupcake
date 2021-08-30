@@ -2,7 +2,8 @@
 use rand::distributions::{Distribution, Normal};
 use rand::rngs::{OsRng, StdRng};
 use rand::FromEntropy;
-use rand::{thread_rng, Rng};
+use rand::{thread_rng, Rng}; 
+
 use super::*;
 
 use crate::rqpoly::RqPolyContext;
@@ -12,15 +13,14 @@ where
     T: SuperTrait<T>,
 {
     let mut rng = OsRng::new().unwrap();
-    let mut c = vec![];
     let q = context.q.rep() as i64; 
-    for _x in 0..context.n {
+    let c = (0..context.n).map(|_| {
         let mut t = rng.gen_range(-1i32, 2i32) as i64;
         if t < 0{
             t += q; 
         }
-        c.push(T::from(t as u64));
-    }
+        T::from(t as u64)
+    }).collect::<Vec<T>>();
     RqPoly {
         coeffs: c,
         is_ntt_form: false,

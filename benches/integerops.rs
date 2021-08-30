@@ -10,7 +10,6 @@ use cupcake::integer_arith::ArithUtils;
 
 #[allow(non_snake_case)]
 fn bench_mulmod(bench: &mut Bencher) {
-    
     let q = Scalar::new_modulus(18014398492704769u64);
     let x = rand::random::<u64>();
     let y = rand::random::<u64>();
@@ -19,15 +18,10 @@ fn bench_mulmod(bench: &mut Bencher) {
     let Y = Scalar::from(y);
 
     bench.iter(|| {
-        let _ = Scalar::mul_mod(&X, &Y, &q); 
+        let _ = Scalar::mul_mod(&X, &Y, &q);
     })
 }
 
-
-benchmark_group!(
-    integerops_group,
-    bench_mulmod,
-);
-
+benchmark_group!(integerops_group, bench_mulmod,);
 
 benchmark_main!(integerops_group);
