@@ -1,4 +1,4 @@
-## 0.2.1 (TBD)
+## 0.2.1 (August 30, 2021)
 
 * Performance optimizations: Faster encryption/decryption based on lazy NTT
 

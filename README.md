@@ -11,7 +11,7 @@ Cupcake requires or works with
 ## Installation
 Add the following line to the dependencies of your Cargo.toml:
 ```
-Cupcake = "0.2.0"
+Cupcake = "0.2.1"
 ```
 
 ## Building from source
