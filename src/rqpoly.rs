@@ -128,8 +128,6 @@ where
             roots.push(s.clone());
             s = T::mul_mod(&s, &phi, &self.q);
         }
-        // now bit reverse a vector
-        
         reverse_bits_perm(&mut roots);
         self.roots = roots;
         
@@ -441,7 +439,6 @@ mod tests {
         // assert 
         assert_eq!(aa.coeffs, a.coeffs); 
     }
-
 
     #[test]
     fn test_lazy_inverse_ntt(){

@@ -8,7 +8,6 @@ use bencher::Bencher;
 use cupcake::rqpoly::RqPolyContext;
 use cupcake::traits::*;
 pub use std::sync::Arc;
-// use cupcake::randutils;
 use cupcake::integer_arith::scalar::Scalar;
 use cupcake::integer_arith::ArithUtils;
 use cupcake::randutils;

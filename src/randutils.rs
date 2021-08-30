@@ -1,3 +1,8 @@
+// Copyright (c) Facebook, Inc. and its affiliates.
+//
+// This source code is licensed under the MIT license found in the
+// LICENSE file in the root directory of this source tree.
+
 /// Utility functions for generating random polynomials.
 use rand::distributions::{Distribution, Normal};
 use rand::rngs::{OsRng, StdRng};
@@ -33,17 +38,18 @@ where
     T: SuperTrait<T>,
 {
     let mut rng = StdRng::from_entropy();
-    let mut c = vec![];
     let q = context.q.rep(); 
-    let qminus = q-1; 
-    for _x in 0..context.n {
-        let t = rng.gen_range(-1i32, 2i32); 
-        if t < 0{
-            c.push(T::from(qminus));
-        } else{
-            c.push(T::from(t as u64));
+    let q_minus_one = q-1 as u64; 
+    
+    let c = (0..context.n).map(|_| {
+        let t = rng.gen_range(-1i32, 2i32) as i64;
+        let mut s: u64 = t as u64; 
+        if t < 0 {
+            s = q_minus_one; 
         }
-    }
+        T::from(s)
+    }).collect::<Vec<T>>();
+
     RqPoly {
         coeffs: c,
         is_ntt_form: false,
@@ -56,18 +62,18 @@ pub fn sample_gaussian_poly<T>(context: Arc<RqPolyContext<T>>, stdev: f64) -> Rq
 where
     T: SuperTrait<T>,
 {
-    let mut c = vec![];
     let normal = Normal::new(0.0, stdev);
     let mut rng = thread_rng();
     let q: f64 = context.q.rep() as f64; 
-    for _ in 0..context.n {
+
+    let c = (0..context.n).map(|_| {
         let mut tmp = normal.sample(&mut rng);
-        // branch on sign
         if tmp < 0.0 {
             tmp += q; 
         } 
-        c.push(T::from(tmp as u64));
-    }
+        T::from(tmp as u64)
+    }).collect::<Vec<T>>();
+    
     RqPoly {
         coeffs: c,
         is_ntt_form: false,

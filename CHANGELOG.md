@@ -1,9 +1,6 @@
 ## 0.2.1 (TBD)
 
-* Performance optimizations
-    - Lazy butterfly and inverse butterfly
-    - NTT based on lazy butterflies 
-    - New performance benchmarks 
+* Performance optimizations: Faster encryption/decryption based on lazy NTT
 
 ## 0.2.0 (June 1, 2021)
 
