@@ -25,7 +25,7 @@ cargo build --release
 ## Examples
 
 Several examples are included in `examples/<name>.rs`, and can be run via
-`cargo run --example <name>`
+`cargo run --example <name>` or `cargo run --release --example <name>`
 
 ## Documentation
 
@@ -33,7 +33,7 @@ Documentation on the API can be built from `cargo doc`.
 
 ## Benchmarks and Tests
 
-We have included benchmarks and tests for both homomorphic operations and underlying arithmetic operations. They can be run using `cargo bench` and `cargo test`.
+We have included benchmarks and tests for both homomorphic operations and underlying arithmetic operations. They can be run using `cargo bench` and `cargo test`. Additional tests can be run for the example CupcakeParallel wrapper with `cargo test --examples parallel`
 
 ## Supported parameters
 

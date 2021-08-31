@@ -10,14 +10,10 @@ use cupcake::FVPlaintext;
 use cupcake::integer_arith::scalar::Scalar;
 use cupcake::SecretKey;
 
-use rayon::iter::IntoParallelIterator;
-use rayon::iter::ParallelIterator;
-use rayon::iter::IndexedParallelIterator;
+use rayon::iter::{IntoParallelIterator,ParallelIterator,IndexedParallelIterator};
 
-use serde::{Deserialize, Serialize};
 use std::fmt::{Debug, Display, Error, Formatter};
 
-#[derive(Hash, PartialEq, Eq, Clone, Debug, Serialize, Deserialize)]
 pub struct ByteBuffer {
     pub buffer: Vec<u8>,
 }
@@ -95,7 +91,7 @@ impl CupcakeParallel {
             .collect::<Vec<Vec<u8>>>()
     }
 
-    // also deserializes and serializes at both ends.
+    // method takes serialized input and serializes the output
     pub fn parallel_plaintext_ciphertext_subtract_rerandomize(&self, ctvec: &Vec<ByteBuffer>, ptvec: &Vec<Vec<u8>>,
     ) -> Vec<ByteBuffer> {
         let pk_ = &self.pk;
@@ -186,7 +182,7 @@ impl CupcakeParallel {
 
 
 fn main() {
-    // Oultine of PS3I HE operations using cupcake
+    // Outline of PS3I HE operations using cupcake
 
     //////////////  SETUP ///////////////////
 
