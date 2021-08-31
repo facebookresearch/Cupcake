@@ -12,7 +12,7 @@ use cupcake::SecretKey;
 
 use rayon::iter::{IntoParallelIterator,ParallelIterator,IndexedParallelIterator};
 
-use std::fmt::{Debug, Display, Error, Formatter};
+use std::fmt::{ Display, Error, Formatter};
 
 pub struct ByteBuffer {
     pub buffer: Vec<u8>,
@@ -148,7 +148,6 @@ impl CupcakeParallel {
             .collect::<Vec<ByteBuffer>>()
     }
 
-    // would it be more efficient to pass by mutable reference and have no return??
     pub fn parallel_plaintext_ciphertext_add(&self, ctvec: &Vec<ByteBuffer>, ptvec: &Vec<Vec<u8>>,
     ) -> Vec<ByteBuffer> {
         let it_ct = ctvec.into_par_iter();
