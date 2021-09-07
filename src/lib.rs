@@ -79,7 +79,7 @@
 //! # let scheme = cupcake::default();
 //! # use cupcake::traits::{KeyGeneration, SKEncryption, PKEncryption};
 //! # let (pk, sk) = scheme.generate_keypair();
-//! use cupcake::traits::CipherPlainAddition;
+//! use cupcake::traits::AddAndSubtract;
 //! let z = vec![1; scheme.n];
 //! let mut ctz = scheme.encrypt(&z, &pk);
 //! let p = vec![4; scheme.n];
@@ -252,7 +252,7 @@ T: ArithUtils<T>{
     }
 }
 
-impl<T> CipherPlainAddition<FVCiphertext<T>, FVPlaintext<T>> for FV<T>
+impl<T> AddAndSubtract<FVCiphertext<T>, FVPlaintext<T>> for FV<T>
 where
     RqPoly<T>: FiniteRingElt,
     T: Clone + ArithUtils<T> + PartialEq,
@@ -264,10 +264,17 @@ where
             *ct_coeff = T::add_mod(ct_coeff, &temp, &self.q);
         }
     }
+
+    fn sub_plain_inplace(&self, ct: &mut FVCiphertext<T>, pt: &FVPlaintext<T>) {
+        for (ct_coeff, pt_coeff) in ct.1.coeffs.iter_mut().zip(pt.iter()) {
+            let temp = T::mul(&pt_coeff, &self.delta);
+            *ct_coeff = T::sub_mod(ct_coeff, &temp, &self.q);
+        }
+    }
 }
 
 
-impl<T> CipherPlainAddition<FVCiphertext<T>, DefaultFVPlaintext> for FV<T>
+impl<T> AddAndSubtract<FVCiphertext<T>, DefaultFVPlaintext> for FV<T>
 where
     RqPoly<T>: FiniteRingElt,
     T: Clone + ArithUtils<T> + PartialEq + From<u32>,
@@ -277,6 +284,13 @@ where
         for (ct_coeff, pt_coeff) in ct.1.coeffs.iter_mut().zip(pt.iter()) {
             let temp = T::mul(&T::from(*pt_coeff as u32), &self.delta);
             *ct_coeff = T::add_mod(ct_coeff, &temp, &self.q);
+        }
+    }
+
+    fn sub_plain_inplace(&self, ct: &mut FVCiphertext<T>, pt: &DefaultFVPlaintext) {
+        for (ct_coeff, pt_coeff) in ct.1.coeffs.iter_mut().zip(pt.iter()) {
+            let temp = T::mul(&T::from(*pt_coeff as u32), &self.delta);
+            *ct_coeff = T::sub_mod(ct_coeff, &temp, &self.q);
         }
     }
 }
@@ -430,12 +444,12 @@ where
             u.forward_transform();
         }
         // c0 = au + e1
-        // let mut c0 = RqPoly::new(self.context.clone()); 
+        // let mut c0 = RqPoly::new(self.context.clone());
         let mut c0 = (self.poly_multiplier)(&pk.0, &u);
         c0.add_inplace(&e1);
 
         // c1 = bu + e2
-        // let mut c1 = RqPoly::new(self.context.clone()); 
+        // let mut c1 = RqPoly::new(self.context.clone());
 
         let mut c1 = (self.poly_multiplier)(&pk.1, &u);
         c1.add_inplace(&e2);
@@ -527,18 +541,18 @@ where
         let mut phase = ct.1.clone();
         phase.sub_inplace(&temp1);
         // then, extract value from phase.
-        let tt: u64 = self.t.rep(); 
-        let qq: u64 = self.q.rep(); 
-        let qdivtwo = qq / 2; 
+        let tt: u64 = self.t.rep();
+        let qq: u64 = self.q.rep();
+        let qdivtwo = qq / 2;
 
         let my_closure = |elm: &T| -> T{
-            let mut tmp:u64 = elm.rep(); 
+            let mut tmp:u64 = elm.rep();
             tmp *= tt;
-            tmp += qdivtwo;  
-            tmp /= qq; 
-            tmp %= tt; 
+            tmp += qdivtwo;
+            tmp /= qq;
+            tmp %= tt;
             T::from(tmp)
-        }; 
+        };
 
         return phase.coeffs.iter()
         .map(my_closure)
@@ -674,6 +688,36 @@ mod fv_scalar_tests {
         fv.add_plain_inplace(&mut ct, &w);
 
         let pt_after_add: DefaultFVPlaintext = fv.decrypt(&ct, &sk);
+
+        assert_eq!(pt_after_add, vplusw);
+    }
+
+    #[test]
+    fn test_sub_plain() {
+        let fv = FV::<Scalar>::default_2048();
+        let sk = fv.generate_key();
+
+        let mut v = vec![0; fv.n];
+        for i in 0..fv.n {
+            v[i] = i as u8;
+        }
+
+        let mut w: Vec<u8> = vec![];
+        for i in 0..fv.n {
+            w.push((fv.n + i) as u8);
+        }
+
+        let mut vplusw = vec![];
+        for _ in 0..fv.n {
+            vplusw.push(fv.n as u8);
+        }
+        // encrypt v
+        let mut ct = fv.encrypt_sk(&v, &sk);
+
+        // ct_v - w.
+        fv.sub_plain_inplace(&mut ct, &w);
+
+        let pt_after_add : DefaultFVPlaintext= fv.decrypt(&ct, &sk);
 
         assert_eq!(pt_after_add, vplusw);
     }
