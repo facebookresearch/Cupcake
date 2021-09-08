@@ -707,9 +707,9 @@ mod fv_scalar_tests {
             w.push((fv.n + i) as u8);
         }
 
-        let mut vplusw = vec![];
+        let mut v_minus_w = vec![];
         for _ in 0..fv.n {
-            vplusw.push(fv.n as u8);
+            v_minus_w.push(fv.n as u8);
         }
         // encrypt v
         let mut ct = fv.encrypt_sk(&v, &sk);
@@ -717,9 +717,9 @@ mod fv_scalar_tests {
         // ct_v - w.
         fv.sub_plain_inplace(&mut ct, &w);
 
-        let pt_after_add : DefaultFVPlaintext= fv.decrypt(&ct, &sk);
+        let pt_after_sub : DefaultFVPlaintext= fv.decrypt(&ct, &sk);
 
-        assert_eq!(pt_after_add, vplusw);
+        assert_eq!(pt_after_sub, v_minus_w);
     }
 
     #[test]
