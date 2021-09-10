@@ -569,10 +569,8 @@ mod fv_scalar_tests {
 
         let sk = fv.generate_key();
 
-        let mut v = vec![0; fv.n];
-        for i in 0..fv.n {
-            v[i] = i as u8;
-        }
+        let v = vec![0; fv.n];
+
         let ct = fv.encrypt_sk(&v, &sk);
 
         let pt_actual: Vec<u8> = fv.decrypt(&ct, &sk);
@@ -586,10 +584,8 @@ mod fv_scalar_tests {
 
         let sk = fv.generate_key();
 
-        let mut v = vec![0; fv.n];
-        for i in 0..fv.n {
-            v[i] = i as u8;
-        }
+        let v = vec![0; fv.n];
+
         let ct = fv.encrypt_sk(&v, &sk);
 
         let pt_actual: Vec<u8> = fv.decrypt(&ct, &sk);
@@ -603,10 +599,8 @@ mod fv_scalar_tests {
 
         let (pk, sk) = fv.generate_keypair();
 
-        let mut v = vec![0; fv.n];
-        for i in 0..fv.n {
-            v[i] = i as u8;
-        }
+        let v = vec![0; fv.n];
+
         let ct = fv.encrypt(&v, &pk);
 
         let pt_actual: Vec<u8> = fv.decrypt(&ct, &sk);
@@ -620,10 +614,8 @@ mod fv_scalar_tests {
 
         let (pk, sk) = fv.generate_keypair();
 
-        let mut v = vec![0; fv.n];
-        for i in 0..fv.n {
-            v[i] = i as u8;
-        }
+        let v = vec![0; fv.n];
+
         let mut ct = fv.encrypt(&v, &pk);
 
         fv.rerandomize(&mut ct, &pk);
@@ -638,20 +630,12 @@ mod fv_scalar_tests {
         let fv = FV::<Scalar>::default_2048();
         let (pk, sk) = fv.generate_keypair();
 
-        let mut v = vec![0; fv.n];
-        for i in 0..fv.n {
-            v[i] = i as u8;
-        }
+        let v = vec![1; fv.n];
 
-        let mut w: Vec<u8> = vec![];
-        for i in 0..fv.n {
-            w.push((fv.n - i) as u8);
-        }
+        let w = vec![2; fv.n];
 
-        let mut vplusw = vec![];
-        for _ in 0..fv.n {
-            vplusw.push(fv.n as u8);
-        }
+        let vplusw = vec![3; fv.n];
+
         // encrypt v
         let mut ctv = fv.encrypt_sk(&v, &sk);
         let ctw = fv.encrypt(&w, &pk);
@@ -667,20 +651,12 @@ mod fv_scalar_tests {
         let fv = FV::<Scalar>::default_2048();
         let (pk, sk) = fv.generate_keypair();
 
-        let mut v = vec![0; fv.n];
-        for i in 0..fv.n {
-            v[i] = i as u8;
-        }
+        let v = vec![1; fv.n];
 
-        let mut w: Vec<u8> = vec![];
-        for i in 0..fv.n {
-            w.push((fv.n - i) as u8);
-        }
+        let w = vec![2; fv.n];
 
-        let mut vplusw = vec![];
-        for _ in 0..fv.n {
-            vplusw.push(fv.n as u8);
-        }
+        let vplusw = vec![3; fv.n];
+
         // encrypt v
         let mut ct = fv.encrypt(&v, &pk);
 
@@ -697,20 +673,12 @@ mod fv_scalar_tests {
         let fv = FV::<Scalar>::default_2048();
         let sk = fv.generate_key();
 
-        let mut v = vec![0; fv.n];
-        for i in 0..fv.n {
-            v[i] = i as u8;
-        }
+        let v = vec![3; fv.n];
 
-        let mut w: Vec<u8> = vec![];
-        for i in 0..fv.n {
-            w.push((fv.n + i) as u8);
-        }
+        let w = vec![1; fv.n];
 
-        let mut v_minus_w = vec![];
-        for _ in 0..fv.n {
-            v_minus_w.push(fv.n as u8);
-        }
+        let v_minus_w = vec![2;fv.n];
+
         // encrypt v
         let mut ct = fv.encrypt_sk(&v, &sk);
 
@@ -778,9 +746,7 @@ mod fv_bigint_tests {
         let sk = fv.generate_key();
 
         let mut v = vec![0; fv.n];
-        for i in 0..fv.n {
-            v[i] = i as u8;
-        }
+
         let ct = fv.encrypt_sk(&v, &sk);
 
         let pt_actual: Vec<u8> = fv.decrypt(&ct, &sk);
@@ -795,9 +761,7 @@ mod fv_bigint_tests {
         let (pk, sk) = fv.generate_keypair();
 
         let mut v = vec![0; fv.n];
-        for i in 0..fv.n {
-            v[i] = i as u8;
-        }
+
         for _ in 0..10 {
             let ct = fv.encrypt(&v, &pk);
             let pt_actual: Vec<u8> = fv.decrypt(&ct, &sk);
@@ -812,9 +776,7 @@ mod fv_bigint_tests {
         let (pk, sk) = fv.generate_keypair();
 
         let mut v = vec![0; fv.n];
-        for i in 0..fv.n {
-            v[i] = i as u8;
-        }
+
         for _ in 0..10 {
             let ct = fv.encrypt(&v, &pk);
             let pt_actual: Vec<u8> = fv.decrypt(&ct, &sk);
@@ -829,9 +791,7 @@ mod fv_bigint_tests {
         let (pk, sk) = fv.generate_keypair();
 
         let mut v = vec![0; fv.n];
-        for i in 0..fv.n {
-            v[i] = i as u8;
-        }
+
         let ct = fv.encrypt(&v, &pk);
 
         let pt_actual: Vec<u8> = fv.decrypt(&ct, &sk);
@@ -846,9 +806,7 @@ mod fv_bigint_tests {
         let (pk, sk) = fv.generate_keypair();
 
         let mut v = vec![0; fv.n];
-        for i in 0..fv.n {
-            v[i] = i as u8;
-        }
+
         let mut ct = fv.encrypt(&v, &pk);
 
         fv.rerandomize(&mut ct, &pk);
@@ -864,19 +822,11 @@ mod fv_bigint_tests {
         let sk = fv.generate_key();
 
         let mut v = vec![0; fv.n];
-        for i in 0..fv.n {
-            v[i] = i as u8;
-        }
 
-        let mut w: Vec<u8> = vec![];
-        for i in 0..fv.n {
-            w.push((fv.n - i) as u8);
-        }
+        let mut w = vec![2; fv.n];
 
-        let mut vplusw = vec![];
-        for _ in 0..fv.n {
-            vplusw.push(fv.n as u8);
-        }
+        let mut vplusw = vec![2; fv.n];
+
         // encrypt v
         let mut ctv = fv.encrypt_sk(&v, &sk);
         let ctw = fv.encrypt_sk(&w, &sk);
@@ -895,19 +845,11 @@ mod fv_bigint_tests {
         let sk = fv.generate_key();
 
         let mut v = vec![0; fv.n];
-        for i in 0..fv.n {
-            v[i] = i as u8;
-        }
 
-        let mut w: Vec<u8> = vec![];
-        for i in 0..fv.n {
-            w.push((fv.n - i) as u8);
-        }
+        let mut w = vec![1; fv.n];
 
-        let mut vplusw = vec![];
-        for _ in 0..fv.n {
-            vplusw.push(fv.n as u8);
-        }
+        let mut vplusw = vec![1; fv.n];
+
         // encrypt v
         let mut ct = fv.encrypt_sk(&v, &sk);
 
