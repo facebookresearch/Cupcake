@@ -196,17 +196,17 @@ pub type DefaultFVPlaintext = Vec<u8>;
 pub type FVCiphertext<T> = (RqPoly<T>, RqPoly<T>);
 
 /// Default scheme type
-pub type DefaultShemeType = FV<Scalar>;
+pub type DefaultSchemeType = FV<Scalar>;
 
 /// SecretKey type
 pub struct SecretKey<T>(RqPoly<T>);
 use rqpoly::{FiniteRingElt, RqPoly, RqPolyContext};
 
-pub fn default() -> DefaultShemeType {
+pub fn default() -> DefaultSchemeType {
     FV::<Scalar>::default_2048()
 }
 
-pub fn default_with_plaintext_mod(t: u32) -> DefaultShemeType {
+pub fn default_with_plaintext_mod(t: u32) -> DefaultSchemeType {
     FV::<Scalar>::default_2048_with_plaintext_mod(t)
 }
 
